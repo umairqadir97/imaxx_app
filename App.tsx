@@ -191,7 +191,7 @@ const MainAppContent: React.FC = () => {
 
         <TabButton onPress={() => setActiveTab('sleep')} active={activeTab === 'sleep'}>
           <Moon size={22} color={activeTab === 'sleep' ? '#FF7E47' : '#6B6280'} />
-          <TabLabel active={activeTab === 'sleep'}>Sleep</TabLabel>
+          <TabLabel active={activeTab === 'sleep'}>Alarmy</TabLabel>
         </TabButton>
 
         {/* Center glowing orb tab button (cloning Somora central neon sleep trigger button) */}

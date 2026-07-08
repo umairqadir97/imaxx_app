@@ -298,13 +298,24 @@ const FlipCardDigits = React.memo<FlipCardDigitsProps>(
 // Works on web (mouse drag) + iOS/Android (touch drag)
 // -------------------------------------------------------------
 const SwipeDial: React.FC<{ onIncrement?: () => void; onDecrement?: () => void }> = ({ onIncrement, onDecrement }) => {
+  const onIncrementRef = useRef(onIncrement);
+  const onDecrementRef = useRef(onDecrement);
+
+  // Sync refs with the latest props
+  useEffect(() => {
+    onIncrementRef.current = onIncrement;
+    onDecrementRef.current = onDecrement;
+  }, [onIncrement, onDecrement]);
+
   const lastDy = useRef(0);
   const STEP = 10; // px per increment step
 
+  // Mobile Touch Drag handling (prevents parent ScrollView from canceling)
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         lastDy.current = 0;
       },
@@ -314,10 +325,10 @@ const SwipeDial: React.FC<{ onIncrement?: () => void; onDecrement?: () => void }
           const steps = Math.floor(Math.abs(delta) / STEP);
           if (delta < 0) {
             // Dragging up → increment
-            for (let i = 0; i < steps; i++) onIncrement?.();
+            for (let i = 0; i < steps; i++) onIncrementRef.current?.();
           } else {
             // Dragging down → decrement
-            for (let i = 0; i < steps; i++) onDecrement?.();
+            for (let i = 0; i < steps; i++) onDecrementRef.current?.();
           }
           lastDy.current += steps * (delta < 0 ? -STEP : STEP);
         }
@@ -328,9 +339,42 @@ const SwipeDial: React.FC<{ onIncrement?: () => void; onDecrement?: () => void }
     })
   ).current;
 
+  // Web Mouse Drag handling (tracks cursor globally across the window)
+  const onMouseDownWeb = (e: React.MouseEvent) => {
+    if (Platform.OS !== 'web') return;
+    e.preventDefault();
+    const startY = e.clientY;
+    let localLastDy = 0;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const dy = moveEvent.clientY - startY;
+      const delta = dy - localLastDy;
+      if (Math.abs(delta) >= STEP) {
+        const steps = Math.floor(Math.abs(delta) / STEP);
+        if (delta < 0) {
+          for (let i = 0; i < steps; i++) onIncrementRef.current?.();
+        } else {
+          for (let i = 0; i < steps; i++) onDecrementRef.current?.();
+        }
+        localLastDy += steps * (delta < 0 ? -STEP : STEP);
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
   return (
-    <View style={{ position: 'absolute', right: -18, top: 28, width: 24, height: 54, alignItems: 'center', justifyContent: 'center', zIndex: 20 } as any}
-      {...panResponder.panHandlers}>
+    <View 
+      style={{ position: 'absolute', right: -18, top: 28, width: 24, height: 54, alignItems: 'center', justifyContent: 'center', zIndex: 20 } as any}
+      {...panResponder.panHandlers}
+      {...(Platform.OS === 'web' ? { onMouseDown: onMouseDownWeb } : {})}
+    >
       <GearDialKnob style={{ position: 'relative', right: 0, top: 0, cursor: 'ns-resize' } as any}>
         <GearDialStripe />
         <GearDialStripe style={{ marginTop: 3 }} />
@@ -369,6 +413,9 @@ export const FocusTimerTab: React.FC = () => {
     currentPhase,
     sessionActive,
   } = useAppSelector((state) => state.audio);
+
+  const pomoFocusDurationRef = useRef(pomoFocusDuration);
+  pomoFocusDurationRef.current = pomoFocusDuration;
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState('');
@@ -447,32 +494,32 @@ export const FocusTimerTab: React.FC = () => {
 
   // Adjusters for 3-card interactive layout (Updates Redux & Syncs widget)
   const incrementHours = () => {
-    const nextDuration = pomoFocusDuration + 3600;
+    const nextDuration = pomoFocusDurationRef.current + 3600;
     dispatch(setPomoFocusDuration(Math.min(359900, nextDuration)));
   };
 
   const decrementHours = () => {
-    const nextDuration = Math.max(60, pomoFocusDuration - 3600);
+    const nextDuration = Math.max(60, pomoFocusDurationRef.current - 3600);
     dispatch(setPomoFocusDuration(nextDuration));
   };
 
   const incrementMinutes = () => {
-    const nextDuration = pomoFocusDuration + 60;
+    const nextDuration = pomoFocusDurationRef.current + 60;
     dispatch(setPomoFocusDuration(Math.min(359900, nextDuration)));
   };
 
   const decrementMinutes = () => {
-    const nextDuration = Math.max(60, pomoFocusDuration - 60);
+    const nextDuration = Math.max(60, pomoFocusDurationRef.current - 60);
     dispatch(setPomoFocusDuration(nextDuration));
   };
 
   const incrementSeconds = () => {
-    const nextDuration = pomoFocusDuration + 5;
+    const nextDuration = pomoFocusDurationRef.current + 5;
     dispatch(setPomoFocusDuration(Math.min(359900, nextDuration)));
   };
 
   const decrementSeconds = () => {
-    const nextDuration = Math.max(5, pomoFocusDuration - 5);
+    const nextDuration = Math.max(5, pomoFocusDurationRef.current - 5);
     dispatch(setPomoFocusDuration(nextDuration));
   };
 
