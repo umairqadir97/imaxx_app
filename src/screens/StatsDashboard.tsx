@@ -90,9 +90,9 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({ onOpenPaywall })
 
         {/* Custom triggers & Reset */}
         <SectionTitle>Preferences & System</SectionTitle>
-        
+
         <SettingItem onPress={onOpenPaywall}>
-          <SettingItemText>Unlock Dopamind Premium</SettingItemText>
+          <SettingItemText>Unlock iMaxx Premium</SettingItemText>
           <ArrowRight size={16} color="#6B6280" />
         </SettingItem>
 

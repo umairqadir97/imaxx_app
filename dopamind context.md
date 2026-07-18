@@ -41,7 +41,7 @@ Endel : https://apps.apple.com/us/app/endel-focus-sleep-sounds/id1346247457
 ### ONBOARDING (4 Screens)
 | # | Screen | Key Elements |
 |---|--------|-------------|
-| 1 | **Splash** | Animated logo, pulsing purple glow, "Dopamind" wordmark |
+| 1 | **Splash** | Animated logo, pulsing purple glow, "iMaxx" wordmark |
 | 2 | **Welcome** | "Your brain works differently" headline, energy rhythm selector |
 | 3 | **Struggle Select** | 5 tappable cards, multi-select, determines initial soundscape |
 | 4 | **Permission** | Location, Health, Notifications — single-screen grouped requests |
@@ -275,7 +275,7 @@ Clone of Image 1 with Endel's structure.
 │ 9:41                              [🔔] │
 │                                         │
 │  Hi, Diana!                             │
-│  Welcome to Dopamind                    │
+│  Welcome to iMaxx                    │
 │                                         │
 │  ┌──────────┐  ┌────────────────────┐  │
 │  │ Last     │  │ Time in bed        │  │
@@ -333,7 +333,7 @@ Clone of Image 2. Full-screen dark, category-filtered grid.
 │  │                                 │   │
 │  │        MAJOR UPDATE             │   │
 │  │      "Endel for ADHD"           │   │
-│  │     (rebrand to Dopamind)       │   │
+│  │     (rebrand to iMaxx)       │   │
 │  └─────────────────────────────────┘   │
 │                                         │
 │  ●  ○  (page indicator)                │
@@ -426,8 +426,8 @@ Clone of Image 2. Full-screen dark, category-filtered grid.
 │  └─────────────────────────────────┘   │
 │                                         │
 │  ┌─────────────────────────────────┐   │
-│  │  Dopamind Plus                    │   │
-│  │  $4.99/week or $39.99/year       │   │
+│  │  iMaxx Plus                    │   │
+│  │  $6.99/week or $39.99/year       │   │
 │  │  SAVE 35% annually               │   │
 │  │                                 │   │
 │  │  [Start 7-Day Free Trial]        │   │
@@ -435,7 +435,7 @@ Clone of Image 2. Full-screen dark, category-filtered grid.
 │  └─────────────────────────────────┘   │
 │                                         │
 │  ┌─────────────────────────────────┐   │
-│  │  Dopamind Pro                     │   │
+│  │  iMaxx Pro                     │   │
 │  │  $9.99/month or $69.99/year      │   │
 │  │  Everything in Plus + Coaching   │   │
 │  └─────────────────────────────────┘   │
@@ -458,7 +458,7 @@ Clone of Image 2. Full-screen dark, category-filtered grid.
 ## GOOGLE ANTIGRAVITY 2.0 + REACT NATIVE PROMPT
 
 ```
-You are an expert React Native developer using Google Antigravity 2.0 design system. Build a pixel-perfect clone of the Endel app called "Dopamind" — an ADHD-friendly soundscape and habit tracker app.
+You are an expert React Native developer using Google Antigravity 2.0 design system. Build a pixel-perfect clone of the Endel app called "iMaxx" — an ADHD-friendly soundscape and habit tracker app.
 
 PLATFORM TARGET: iOS, Android, iPad, macOS (React Native with react-native-macos)
 
@@ -529,7 +529,7 @@ SCREEN 2: SOUNDSCAPE PLAYER (Full Screen Immersive)
 
 SCREEN 3: SLEEP DASHBOARD (From reference image)
 - Top: Time, notification bell
-- Greeting: "Hi, [Name]!" + "Welcome to Dopamind"
+- Greeting: "Hi, [Name]!" + "Welcome to iMaxx"
 - Two cards side by side:
   * Left: "Last sleep" — large date number, month below
   * Right: "Time in bed" — duration large, time range below, progress bar (purple #9B7EDE fill)
@@ -543,7 +543,7 @@ SCREEN 3: SLEEP DASHBOARD (From reference image)
 
 SCREEN 4: SCENARIOS GRID (Full screen, category filtered)
 - Top bar: Logo + "FREEMIUM" badge + Sign In + Close X
-- Hero banner: Abstract human silhouette with orbiting rings, "MAJOR UPDATE" badge, "Dopamind for ADHD" headline
+- Hero banner: Abstract human silhouette with orbiting rings, "MAJOR UPDATE" badge, "iMaxx for ADHD" headline
 - Page indicator dots (2 pages)
 - "SCENARIOS" header + grid of pill buttons (same as home)
 - Category sections: FOCUS, RELAX, SLEEP

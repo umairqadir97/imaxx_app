@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components/native';
+import { ScrollView } from 'react-native';
 
 interface HabitGridProps {
   completions: string[]; // ['2026-07-01', '2026-07-02', ...]
@@ -11,17 +12,22 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
   const getGridDays = () => {
     const days = [];
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const startDate = new Date();
     startDate.setDate(today.getDate() - 364);
     const dayOfWeek = startDate.getDay();
     const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
     startDate.setDate(diff);
+    startDate.setHours(0, 0, 0, 0);
 
     // Loop through 53 weeks (371 days)
     for (let i = 0; i < 371; i++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
       days.push({
         dateStr,
         isCompleted: completions.includes(dateStr),
@@ -34,7 +40,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
   const gridDays = getGridDays();
 
   // Chunk days into 53 weeks (columns) of 7 days
-  const weeks = [];
+  const weeks: any[] = [];
   for (let i = 0; i < 53; i++) {
     weeks.push(gridDays.slice(i * 7, (i + 1) * 7));
   }
@@ -42,9 +48,9 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
   // Calculate Month labels for weeks
   const monthNamesAbbr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const monthLabels = weeks.map((week, idx) => {
-    const d = new Date(week[0].dateStr);
-    const m = d.getMonth();
-    const show = idx === 0 || new Date(weeks[idx - 1][0].dateStr).getMonth() !== m;
+    const parts = week[0].dateStr.split('-');
+    const m = parseInt(parts[1], 10) - 1; // 0-indexed
+    const show = idx === 0 || (parseInt(weeks[idx - 1][0].dateStr.split('-')[1], 10) - 1) !== m;
     return {
       name: monthNamesAbbr[m],
       show,
@@ -61,7 +67,17 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
         ))}
       </WeekRowHeader>
       
-      <ScrollWrapper horizontal showsHorizontalScrollIndicator={false}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentOffset={{ x: 10000, y: 0 }}
+        style={{ flex: 1 }}
+        ref={(ref: any) => {
+          if (ref) {
+            setTimeout(() => ref.scrollToEnd({ animated: false }), 50);
+          }
+        }}
+      >
         <GridWrapperCol>
           <MonthsRow>
             {monthLabels.map((lbl, idx) => lbl.show ? (
@@ -74,7 +90,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
           <Grid>
             {weeks.map((week, weekIndex) => (
               <WeekColumn key={`week_${weekIndex}`}>
-                {week.map((day, dayIndex) => (
+                {week.map((day: any, dayIndex: number) => (
                   <Tile
                     key={`day_${weekIndex}_${dayIndex}`}
                     completed={day.isCompleted}
@@ -87,7 +103,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
             ))}
           </Grid>
         </GridWrapperCol>
-      </ScrollWrapper>
+      </ScrollView>
 
       <WeekRowHeader style={{ marginLeft: 8, marginRight: 0 }}>
         {weekdays.map((day) => (
@@ -101,7 +117,7 @@ export const HabitGrid: React.FC<HabitGridProps> = ({ completions, color }) => {
 const GridContainer = styled.View`
   flex-direction: row;
   align-items: center;
-  padding: 8px 0;
+  padding: 4px 0;
   width: 100%;
 `;
 
@@ -110,7 +126,7 @@ const WeekRowHeader = styled.View`
   justify-content: space-between;
   margin-right: 8px;
   height: 87px;
-  margin-top: 20px;
+  margin-top: 16px;
   align-items: flex-end;
 `;
 

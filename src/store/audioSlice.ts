@@ -34,6 +34,7 @@ export interface AudioState {
   completedPomodorosCount: number;
   totalFocusSeconds: number;
   weeklyFocusMinutes: number[]; // Sunday to Saturday focus stats
+  categoryFocusSeconds: Record<string, number>; // Focus category tracking
   soundscapesList: Soundscape[];
   scenariosList: Scenario[];
   focusType: 'pomodoro' | 'quick';
@@ -46,6 +47,8 @@ export interface AudioState {
   sessionElapsedSeconds: number;   // how many seconds consumed so far
   currentPhase: 'focus' | 'break'; // which phase is running
   sessionActive: boolean;          // a full session (focus+break cycles) is underway
+  hasActiveAudioSession: boolean;
+  isYTAdPlaying: boolean;
 }
 
 const initialSoundscapes: Soundscape[] = [
@@ -57,19 +60,41 @@ const initialSoundscapes: Soundscape[] = [
 ];
 
 const initialScenarios: Scenario[] = [
-  { id: 'focus_timer', name: 'Focus Timer', category: 'focus', isPremium: false },
-  { id: 'anxiety_relief', name: 'Anxiety Relief', category: 'relax', isPremium: true },
-  { id: 'arousal', name: 'Arousal Boost', category: 'focus', isPremium: true },
-  { id: 'attention_boost', name: 'Attention Boost', category: 'focus', isPremium: true },
-  { id: 'asmr', name: 'ASMR Space', category: 'relax', isPremium: true },
-  { id: 'baby_sleep', name: 'Baby Sleep', category: 'sleep', isPremium: true },
-  { id: 'binaural_beats', name: 'Binaural Beats', category: 'focus', isPremium: true },
-  { id: 'brain_massage', name: 'Brain Massage', category: 'relax', isPremium: true },
-  { id: 'chores', name: 'Chores Flow', category: 'relax', isPremium: false },
-  { id: 'deep_work', name: 'Deep Work', category: 'focus', isPremium: true },
-  { id: 'self_care', name: 'Self Care', category: 'relax', isPremium: false },
-  { id: 'power_nap', name: 'Power Nap', category: 'sleep', isPremium: true },
-  { id: 'meditate', name: 'Zen Meditation', category: 'relax', isPremium: false },
+  // Focus category
+  { id: 'focus_1', name: 'ADHD Deep Flow', category: 'focus', isPremium: false },
+  { id: 'focus_2', name: 'Gamma Concentration', category: 'focus', isPremium: false },
+  { id: 'focus_3', name: 'Circadian Flow Sync', category: 'focus', isPremium: false },
+  { id: 'focus_4', name: 'Ultradian Work Rhythm', category: 'focus', isPremium: false },
+
+  // Sleep category
+  { id: 'sleep_1', name: 'Theta Dreamscape', category: 'sleep', isPremium: false },
+  { id: 'sleep_2', name: 'Lunar Sleep Cradle', category: 'sleep', isPremium: false },
+  { id: 'sleep_3', name: 'Ocean Twilight', category: 'sleep', isPremium: false },
+  { id: 'sleep_4', name: 'Cosmic Star Rest', category: 'sleep', isPremium: false },
+
+  // Frequencies category
+  { id: 'freq_1', name: '528Hz Solfeggio', category: 'focus', isPremium: false },
+  { id: 'freq_2', name: '432Hz Cosmic Calm', category: 'focus', isPremium: false },
+  { id: 'freq_3', name: '40Hz Gamma Focus', category: 'focus', isPremium: false },
+  { id: 'freq_4', name: '8Hz Theta Sleep', category: 'focus', isPremium: false },
+
+  // Nature category
+  { id: 'nature_1', name: 'Forest Wind Whispers', category: 'relax', isPremium: false },
+  { id: 'nature_2', name: 'Campfire Logs Crackle', category: 'relax', isPremium: false },
+  { id: 'nature_3', name: 'Somatic River Calmer', category: 'relax', isPremium: false },
+  { id: 'nature_4', name: 'Mountain Ocean Tide', category: 'relax', isPremium: false },
+
+  // Rain category
+  { id: 'rain_1', name: 'Cozy Attic Storm', category: 'relax', isPremium: false },
+  { id: 'rain_2', name: 'Rainforest Shower', category: 'relax', isPremium: false },
+  { id: 'rain_3', name: 'Soft Summer Drizzle', category: 'relax', isPremium: false },
+  { id: 'rain_4', name: 'Thunderstorm Sleep', category: 'relax', isPremium: false },
+
+  // Relaxing category
+  { id: 'relax_1', name: 'Zen Temple Bowl', category: 'relax', isPremium: false },
+  { id: 'relax_2', name: 'Bilateral EMDR Sync', category: 'relax', isPremium: false },
+  { id: 'relax_3', name: 'Anxiety Rescue Wave', category: 'relax', isPremium: false },
+  { id: 'relax_4', name: 'Somatic Calm Sound', category: 'relax', isPremium: false }
 ];
 
 const initialState: AudioState = {
@@ -84,12 +109,21 @@ const initialState: AudioState = {
   timerIsActive: false,
   isPremiumUnlocked: false,
   isMiniPlayerDismissed: false,
+  hasActiveAudioSession: false,
   timerMode: 'pomo',
   animationStyle: 'falling',
   activeSubScreen: 'timer',
   completedPomodorosCount: 3020, // matching focus stats in Image 4
   totalFocusSeconds: 1540 * 3600, // matching 1540h total in Image 4
   weeklyFocusMinutes: [372, 360, 455, 385, 387, 0, 0], // S, M, T, W, T, F, S
+  categoryFocusSeconds: {
+    Work: 600 * 3600,
+    Study: 450 * 3600,
+    Meditate: 120 * 3600,
+    Fitness: 80 * 3600,
+    Code: 200 * 3600,
+    Relax: 90 * 3600,
+  },
   soundscapesList: initialSoundscapes,
   scenariosList: initialScenarios,
   focusType: 'pomodoro',
@@ -101,6 +135,7 @@ const initialState: AudioState = {
   sessionElapsedSeconds: 0,
   currentPhase: 'focus',
   sessionActive: false,
+  isYTAdPlaying: false,
 };
 
 const audioSlice = createSlice({
@@ -115,19 +150,32 @@ const audioSlice = createSlice({
       } else {
         state.isPlaying = !state.isPlaying;
       }
+      if (state.isPlaying) {
+        state.hasActiveAudioSession = true;
+        state.isMiniPlayerDismissed = false;
+      }
     },
     playAudio: (state) => {
       state.isPlaying = true;
+      state.hasActiveAudioSession = true;
+      state.isMiniPlayerDismissed = false;
     },
     pauseAudio: (state) => {
       state.isPlaying = false;
       state.timerIsActive = false;
     },
+    resetAudioState: (state) => {
+      state.isPlaying = false;
+      state.activeScenarioId = null;
+      state.hasActiveAudioSession = false;
+      state.timerIsActive = false;
+    },
     setSoundscape: (state, action: PayloadAction<string>) => {
       state.activeSoundscape = action.payload;
       state.activeScenarioId = null;
-      state.isPlaying = true;
+      state.isPlaying = false;
       state.isMiniPlayerDismissed = false; // Show player again
+      state.hasActiveAudioSession = true;
     },
     setScenario: (state, action: PayloadAction<string>) => {
       const scenario = state.scenariosList.find(s => s.id === action.payload);
@@ -136,7 +184,11 @@ const audioSlice = createSlice({
         state.activeSoundscape = scenario.category;
         state.isPlaying = true;
         state.isMiniPlayerDismissed = false; // Show player again
+        state.hasActiveAudioSession = true;
       }
+    },
+    setYTAdPlaying: (state, action: PayloadAction<boolean>) => {
+      state.isYTAdPlaying = action.payload;
     },
     setVolume: (state, action: PayloadAction<number>) => {
       state.volume = Math.max(0, Math.min(1, action.payload));
@@ -153,6 +205,7 @@ const audioSlice = createSlice({
       state.timerIsActive = true;
       state.isPlaying = true;
       state.isMiniPlayerDismissed = false; // Show player again
+      state.hasActiveAudioSession = true;
     },
     // Start a full session (resets elapsed time, sets total, begins focus phase)
     startSession: (state, action: PayloadAction<{ focusDuration: number; sessionTotal: number }>) => {
@@ -166,6 +219,7 @@ const audioSlice = createSlice({
       state.timerIsActive = true;
       state.isPlaying = true;
       state.isMiniPlayerDismissed = false;
+      state.hasActiveAudioSession = true;
     },
     tickTimer: (state) => {
       if (state.timerIsActive && state.timerTimeLeft > 0) {
@@ -237,6 +291,7 @@ const audioSlice = createSlice({
       state.isMiniPlayerDismissed = true;
       state.isPlaying = false;
       state.timerIsActive = false;
+      state.hasActiveAudioSession = false;
     },
     setTimerMode: (state, action: PayloadAction<'pomo' | 'short_break' | 'long_break'>) => {
       state.timerMode = action.payload;
@@ -263,6 +318,12 @@ const audioSlice = createSlice({
       if (dayIdx >= 0 && dayIdx < 7) {
         state.weeklyFocusMinutes[dayIdx] += Math.floor(action.payload / 60);
       }
+      // Add to active category focus seconds
+      const cat = state.focusCategory || 'Work';
+      if (!state.categoryFocusSeconds) {
+        state.categoryFocusSeconds = { Work: 600*3600, Study: 450*3600, Meditate: 120*3600, Fitness: 80*3600, Code: 200*3600, Relax: 90*3600 };
+      }
+      state.categoryFocusSeconds[cat] = (state.categoryFocusSeconds[cat] || 0) + action.payload;
     },
     incrementCompletedPomodoros: (state) => {
       state.completedPomodorosCount += 1;
@@ -312,6 +373,8 @@ export const {
   pauseAudio,
   setSoundscape,
   setScenario,
+  setYTAdPlaying,
+  resetAudioState,
   setVolume,
   toggleBlockApps,
   toggleBlendAudio,

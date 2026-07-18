@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { PanResponder } from 'react-native';
 import styled from 'styled-components/native';
 import { X, Play, Clock } from 'lucide-react-native';
 import { useAppDispatch } from '../store';
@@ -30,21 +31,42 @@ export const TimerSheet: React.FC<TimerSheetProps> = ({ visible, onClose }) => {
     onClose();
   };
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const { dy, dx } = gestureState;
+        // Respond to downward swipes
+        return dy > 45 && Math.abs(dx) < 30;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dy } = gestureState;
+        if (dy > 90) {
+          onClose();
+        }
+      },
+    })
+  ).current;
+
   if (!visible) return null;
 
   return (
     <ModalContainer>
       <Backdrop onPress={onClose} />
       <SheetContent>
-        <HeaderRow>
-          <TitleRow>
-            <Clock size={20} color="#9B7EDE" style={{ marginRight: 8 }} />
-            <SheetTitle>Set Focus Timer</SheetTitle>
-          </TitleRow>
-          <CloseButton onPress={onClose}>
-            <X size={20} color="#FFFFFF" />
-          </CloseButton>
-        </HeaderRow>
+        <HeaderWrapper {...panResponder.panHandlers}>
+          <GestureIndicatorContainer>
+            <GestureIndicatorBar />
+          </GestureIndicatorContainer>
+          <HeaderRow>
+            <TitleRow>
+              <Clock size={20} color="#9B7EDE" style={{ marginRight: 8 }} />
+              <SheetTitle>Set Focus Timer</SheetTitle>
+            </TitleRow>
+            <CloseButton onPress={onClose}>
+              <X size={20} color="#FFFFFF" />
+            </CloseButton>
+          </HeaderRow>
+        </HeaderWrapper>
 
         <PresetsTitle>PRESET INTERVALS</PresetsTitle>
         <PresetsGrid>
@@ -233,4 +255,25 @@ const StartButtonText = styled.Text`
   color: #0D0B1A;
   font-size: 16px;
   font-weight: bold;
+`;
+
+const GestureIndicatorContainer = styled.View`
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-top: 10px;
+  padding-bottom: 5px;
+  background-color: transparent;
+`;
+
+const GestureIndicatorBar = styled.View`
+  width: 40px;
+  height: 5px;
+  border-radius: 2.5px;
+  background-color: rgba(255, 255, 255, 0.2);
+`;
+
+const HeaderWrapper = styled.View`
+  background-color: transparent;
+  width: 100%;
 `;

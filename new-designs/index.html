@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMaxx - Mascot & Gamification Interactive Mockup</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070709;
+      --bg-card: rgba(18, 18, 24, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #FFFFFF;
+      --text-sub: #6B6280;
+
+      /* Glowing Accent Colors */
+      --color-focus: #FF7E47;
+      /* Focus Orange */
+      --color-relax: #00F2FE;
+      /* Relax Somora Blue */
+      --color-sleep: #9B7EDE;
+      /* Sleep Purple */
+      --color-habit: #4ECDC4;
+      /* Habit Green */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      max-width: 800px;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #FF7E47, #9B7EDE, #00F2FE);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+
+    header p {
+      color: var(--text-sub);
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    /* Layout Containers */
+    .dashboard-container {
+      display: flex;
+      max-width: 1200px;
+      width: 100%;
+      gap: 50px;
+      align-items: flex-start;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    /* Left Column: Phone Mockup Frame */
+    .phone-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 420px;
+      position: sticky;
+      top: 40px;
+    }
+
+    .phone-frame {
+      width: 380px;
+      height: 760px;
+      background-color: #050507;
+      border: 12px solid #1E1E26;
+      border-radius: 48px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(155, 126, 222, 0.15);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Phone Speaker/Dynamic Island */
+    .phone-island {
+      width: 110px;
+      height: 25px;
+      background-color: #1E1E26;
+      border-radius: 20px;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    /* Phone Content Area */
+    .phone-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding-top: 40px;
+      padding-bottom: 20px;
+      background-color: #08080A;
+      position: relative;
+    }
+
+    /* Right Column: Explanations & Mascot State Selector */
+    .info-column {
+      flex: 1.2;
+      max-width: 650px;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    /* Interactive Mascot State Control Center */
+    .control-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+    }
+
+    .control-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #FFFFFF;
+    }
+
+    .mascot-triggers {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .trigger-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 12px;
+      cursor: pointer;
+      color: var(--text-sub);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .trigger-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .trigger-btn.active[data-state="focused"] {
+      background: rgba(255, 126, 71, 0.15);
+      border-color: var(--color-focus);
+      color: var(--color-focus);
+      box-shadow: 0 0 15px rgba(255, 126, 71, 0.2);
+    }
+
+    .trigger-btn.active[data-state="sleepy"] {
+      background: rgba(155, 126, 222, 0.15);
+      border-color: var(--color-sleep);
+      color: var(--color-sleep);
+      box-shadow: 0 0 15px rgba(155, 126, 222, 0.2);
+    }
+
+    .trigger-btn.active[data-state="foggy"] {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: #A0A0B0;
+      color: #E0E0F0;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+
+    .trigger-btn.active[data-state="celebrating"] {
+      background: rgba(78, 205, 196, 0.15);
+      border-color: var(--color-habit);
+      color: var(--color-habit);
+      box-shadow: 0 0 15px rgba(78, 205, 196, 0.2);
+    }
+
+    .trigger-icon {
+      font-size: 1.5rem;
+    }
+
+    /* Explanation Cards for each tab */
+    .tab-explain-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      display: none;
+    }
+
+    .tab-explain-card.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .explain-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .explain-tag.home-tag {
+      background: rgba(255, 126, 71, 0.15);
+      color: var(--color-focus);
+    }
+
+    .explain-tag.Sleepy-tag {
+      background: rgba(155, 126, 222, 0.15);
+      color: var(--color-sleep);
+    }
+
+    .explain-tag.timer-tag {
+      background: rgba(0, 242, 254, 0.15);
+      color: var(--color-relax);
+    }
+
+    .explain-tag.habits-tag {
+      background: rgba(78, 205, 196, 0.15);
+      color: var(--color-habit);
+    }
+
+    .explain-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .explain-para {
+      color: #A098B5;
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .highlight-box {
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 3px solid var(--color-focus);
+      padding: 16px;
+      border-radius: 0 12px 12px 0;
+      margin-bottom: 16px;
+    }
+
+    .highlight-box.blue-left {
+      border-left-color: var(--color-relax);
+    }
+
+    .highlight-box.purple-left {
+      border-left-color: var(--color-sleep);
+    }
+
+    .highlight-box.green-left {
+      border-left-color: var(--color-habit);
+    }
+
+    .highlight-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .highlight-desc {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    /* Interactive Phone Screens Layouts */
+    .screen-content {
+      flex: 1;
+      padding: 16px;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .screen-content.active {
+      display: flex;
+      animation: slideIn 0.3s ease;
+    }
+
+    .screen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-horizontal: 4px;
+    }
+
+    .screen-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    /* Screen 1: Home View (Endel Central + Widgets) */
+    .home-dial-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .home-dial-wrapper {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .dial-svg {
+      transform: rotate(-90deg);
+    }
+
+    .dial-track {
+      fill: none;
+      stroke: #181822;
+      stroke-width: 6;
+    }
+
+    .dial-progress {
+      fill: none;
+      stroke: url(#cyanGrad);
+      stroke-width: 6;
+      stroke-dasharray: 377;
+      stroke-dashoffset: 90;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+
+    /* Central Floating Mascot */
+    .mascot-container {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .mascot-svg {
+      width: 68px;
+      height: 68px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    /* SVG Character Styling */
+    .mascot-cloud {
+      fill: #FFFFFF;
+      transition: fill 0.3s ease;
+    }
+
+    .mascot-glow {
+      filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.6));
+      transition: filter 0.3s ease;
+    }
+
+    .mascot-eyes {
+      fill: #08080A;
+      transition: all 0.3s ease;
+    }
+
+    .mascot-mouth {
+      stroke: #08080A;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      fill: none;
+      transition: all 0.3s ease;
+    }
+
+    .mascot-glasses {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mascot-cap {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mascot-fog {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mascot-confetti {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Home Dial Buttons */
+    .home-play-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #FF7E47, #FF5B26);
+      border: none;
+      border-radius: 12px;
+      padding: 10px;
+      color: #08080A;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(255, 126, 71, 0.3);
+      transition: transform 0.2s ease;
+    }
+
+    .home-play-btn:active {
+      transform: scale(0.98);
+    }
+
+    .home-consistency-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .grid-container {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(14, 1fr);
+      gap: 3px;
+    }
+
+    .grid-tile {
+      width: 100%;
+      aspect-ratio: 1;
+      background-color: #171522;
+      border-radius: 2px;
+    }
+
+    .grid-tile.completed {
+      background-color: var(--color-focus);
+    }
+
+    /* Screen 2: Sleepy / Sleep Screen */
+    .sleep-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .sleep-stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .sleep-stat-box {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px;
+      border-radius: 12px;
+      margin-right: 8px;
+    }
+
+    .sleep-stat-box:last-child {
+      margin-right: 0;
+    }
+
+    .sleep-stat-lbl {
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .sleep-stat-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .sounds-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .sound-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sound-item.active {
+      border-color: var(--color-sleep);
+      background: rgba(155, 126, 222, 0.08);
+    }
+
+    .sound-icon-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sound-item.active .sound-icon-circle {
+      background: var(--color-sleep);
+      color: #08080A;
+    }
+
+    .sound-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    /* Screen 3: Timer Screen */
+    .timer-display {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 4rem;
+      font-weight: 700;
+      text-align: center;
+      margin: 30px 0;
+      letter-spacing: -2px;
+    }
+
+    .timer-modes {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .timer-mode-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 6px 16px;
+      color: #FFFFFF;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .timer-mode-btn.active {
+      background: var(--color-relax);
+      color: #08080A;
+      border-color: var(--color-relax);
+    }
+
+    /* Screen 4: Habits Screen */
+    .habit-item-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .habit-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .habit-card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .habit-card-desc {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    .habit-check-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1.5px solid var(--text-sub);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .habit-item-card.completed .habit-check-btn {
+      background-color: var(--color-habit);
+      border-color: var(--color-habit);
+    }
+
+    .sprout-container {
+      position: absolute;
+      right: 50px;
+      top: 10px;
+      width: 30px;
+      height: 30px;
+      display: none;
+    }
+
+    .habit-item-card.completed .sprout-container {
+      display: block;
+    }
+
+    /* Phone Bottom Tab Navigation */
+    .phone-nav-bar {
+      height: 60px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background-color: #0A0A0F;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    .phone-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-sub);
+      cursor: pointer;
+      font-size: 0.65rem;
+      font-weight: bold;
+      transition: color 0.2s ease;
+      position: relative;
+    }
+
+    .phone-nav-item.active {
+      color: #FF7E47;
+    }
+
+    .phone-nav-item[data-tab="Sleepy"].active {
+      color: var(--color-sleep);
+    }
+
+    .phone-nav-item[data-tab="timer"].active {
+      color: var(--color-relax);
+    }
+
+    .phone-nav-item[data-tab="habits"].active {
+      color: var(--color-habit);
+    }
+
+    .nav-icon {
+      font-size: 1.15rem;
+    }
+
+    /* Custom SVG animations & transitions */
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+
+      50% {
+        transform: translateY(-6px) rotate(1deg);
+      }
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>iMaxx mascotification</h1>
+    <p>An interactive design playground showcasing <strong>Corti</strong>, the brain-companion mascot, integrated across
+      our core screen logic to solve ADHD retention struggles.</p>
+  </header>
+
+  <div class="dashboard-container">
+
+    <!-- Left side: Interactive Smartphone Frame -->
+    <div class="phone-column">
+      <div class="phone-frame">
+        <div class="phone-island"></div>
+        <div class="phone-screen">
+
+          <!-- Tab 1: Home View -->
+          <div class="screen-content active" id="tab-home">
+            <div class="screen-header">
+              <span class="screen-title">iMaxx</span>
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path
+                  d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <!-- ADHD Focus Dial (Endel Clone) with Mascot inside -->
+            <div class="home-dial-card">
+              <div class="home-dial-wrapper">
+                <svg width="130" height="130" class="dial-svg">
+                  <defs>
+                    <linearGradient id="cyanGrad" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#FF7E47" />
+                      <stop offset="100%" stop-color="#9B7EDE" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="65" cy="65" r="55" class="dial-track" />
+                  <circle cx="65" cy="65" r="55" class="dial-progress" id="home-dial-bar" />
+                </svg>
+
+                <!-- Central Cloud Mascot -->
+                <div class="mascot-container">
+                  <svg viewBox="0 0 100 100" class="mascot-svg" id="corti-mascot">
+                    <g class="mascot-glow" id="corti-glow-layer">
+                      <!-- Confetti layer -->
+                      <g class="mascot-confetti" id="corti-confetti">
+                        <circle cx="20" cy="20" r="2" fill="#4ECDC4" />
+                        <circle cx="80" cy="15" r="3" fill="#FF7E47" />
+                        <circle cx="75" cy="70" r="2.5" fill="#FFD166" />
+                        <circle cx="15" cy="75" r="2" fill="#9B7EDE" />
+                      </g>
+                      <!-- Tangled Scribble underlay for Brain Fog -->
+                      <path class="mascot-fog" id="corti-fog"
+                        d="M 30,50 C 30,25 70,25 70,50 C 70,75 30,75 30,50 M 35,45 C 40,30 65,35 60,55 C 55,70 40,60 50,45"
+                        fill="none" stroke="#6B6280" stroke-width="2.5" />
+                      <!-- Main Brain Cloud Body -->
+                      <path class="mascot-cloud"
+                        d="M 50,75 C 38,75 28,68 28,58 C 28,54 30,50 33,47 C 30,42 32,36 38,34 C 41,28 47,26 53,28 C 58,26 64,28 67,34 C 73,36 75,42 72,47 C 75,50 77,54 77,58 C 77,68 67,75 52,75 Z"
+                        fill="#FFFFFF" />
+                      <!-- Sleeping cap -->
+                      <path class="mascot-cap" id="corti-cap" d="M 45,28 C 45,20 65,15 65,22 C 65,25 58,28 53,28 Z"
+                        fill="#9B7EDE" stroke="#FFFFFF" stroke-width="1.5" />
+                      <!-- Focus Glasses -->
+                      <g class="mascot-glasses" id="corti-glasses">
+                        <circle cx="43" cy="48" r="8" fill="none" stroke="#08080A" stroke-width="2" />
+                        <circle cx="57" cy="48" r="8" fill="none" stroke="#08080A" stroke-width="2" />
+                        <line x1="49" y1="48" x2="51" y2="48" stroke="#08080A" stroke-width="2" />
+                      </g>
+                      <!-- Eyes (Smiling standard) -->
+                      <g class="mascot-eyes" id="corti-eyes">
+                        <circle cx="42" cy="48" r="3.5" />
+                        <circle cx="58" cy="48" r="3.5" />
+                      </g>
+                      <!-- Mouth -->
+                      <path class="mascot-mouth" id="corti-mouth" d="M 46,57 Q 50,61 54,57" />
+                    </g>
+                  </svg>
+                </div>
+              </div>
+              <button class="home-play-btn" id="home-timer-action">
+                <span>Start Focus Session</span>
+              </button>
+            </div>
+
+            <!-- Consistency Counter -->
+            <span class="home-consistency-title">Consistency Counter</span>
+            <div class="grid-container">
+              <div class="mini-grid">
+                <!-- 28 tiles representing a month grid -->
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+                <div class="grid-tile completed"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Sleepy / Sleep View -->
+          <div class="screen-content" id="tab-Sleepy">
+            <div class="screen-header">
+              <span class="screen-title">Sleep Somora</span>
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                  stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <div class="sleep-card">
+              <div class="sleep-stat-row">
+                <div class="sleep-stat-box">
+                  <div class="sleep-stat-lbl">Last Sleep</div>
+                  <div class="sleep-stat-val">21 April</div>
+                </div>
+                <div class="sleep-stat-box">
+                  <div class="sleep-stat-lbl">Time in Bed</div>
+                  <div class="sleep-stat-val">07h 22m</div>
+                </div>
+              </div>
+            </div>
+
+            <span class="home-consistency-title">Sleep Sounds</span>
+            <div class="sounds-grid">
+              <div class="sound-item active" data-sound="rain">
+                <div class="sound-icon-circle">🌧️</div>
+                <span class="sound-label">Forest Rain</span>
+              </div>
+              <div class="sound-item" data-sound="fire">
+                <div class="sound-icon-circle">🔥</div>
+                <span class="sound-label">Campfire</span>
+              </div>
+              <div class="sound-item" data-sound="ocean">
+                <div class="sound-icon-circle">🌊</div>
+                <span class="sound-label">Ocean Wave</span>
+              </div>
+              <div class="sound-item" data-sound="noise">
+                <div class="sound-icon-circle">📳</div>
+                <span class="sound-label">White Noise</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 3: Timer View -->
+          <div class="screen-content" id="tab-timer">
+            <div class="screen-header">
+              <span class="screen-title">Focus Timer</span>
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <div class="timer-modes">
+              <div class="timer-mode-btn active">Pomodoro</div>
+              <div class="timer-mode-btn">Countdown</div>
+            </div>
+
+            <div class="timer-display" id="main-timer-clock">24:59</div>
+
+            <button class="home-play-btn" id="timer-screen-action"
+              style="background: linear-gradient(135deg, #00F2FE, #4FACFE); box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);">
+              <span>Start Focus</span>
+            </button>
+          </div>
+
+          <!-- Tab 4: Habits View (HabitKit Style) -->
+          <div class="screen-content" id="tab-habits">
+            <div class="screen-header">
+              <span class="screen-title">Micro Habits & Goals</span>
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+
+            <!-- Habit Item 1 -->
+            <div class="habit-item-card" id="habit-hydration">
+              <div class="habit-card-top">
+                <div>
+                  <div class="habit-card-title">Hydration Boost</div>
+                  <div class="habit-card-desc">Calm the mind with fresh water</div>
+                </div>
+                <button class="habit-check-btn" onclick="completeHabit('habit-hydration')">
+                  <span style="color: #08080A; font-weight: bold; font-size: 0.8rem; display: none;"
+                    class="check-tick">✓</span>
+                </button>
+              </div>
+              <div class="sprout-container" id="sprout-hydration">🌱</div>
+            </div>
+
+            <!-- Habit Item 2 -->
+            <div class="habit-item-card" id="habit-mindfulness">
+              <div class="habit-card-top">
+                <div>
+                  <div class="habit-card-title">Morning Mindfulness</div>
+                  <div class="habit-card-desc">ADHD grounding exercise</div>
+                </div>
+                <button class="habit-check-btn" onclick="completeHabit('habit-mindfulness')">
+                  <span style="color: #08080A; font-weight: bold; font-size: 0.8rem; display: none;"
+                    class="check-tick">✓</span>
+                </button>
+              </div>
+              <div class="sprout-container" id="sprout-mindfulness">🌱</div>
+            </div>
+          </div>
+
+          <!-- Bottom Navigation Tab Bar inside Phone -->
+          <div class="phone-nav-bar">
+            <div class="phone-nav-item active" data-tab="home">
+              <span class="nav-icon">🌀</span>
+              <span>Home</span>
+            </div>
+            <div class="phone-nav-item" data-tab="Sleepy">
+              <span class="nav-icon">🌙</span>
+              <span>Sleepy</span>
+            </div>
+            <div class="phone-nav-item" data-tab="timer">
+              <span class="nav-icon">⏱️</span>
+              <span>Timer</span>
+            </div>
+            <div class="phone-nav-item" data-tab="habits">
+              <span class="nav-icon">✨</span>
+              <span>Habits</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Right side: Explanation Column & Control Center -->
+    <div class="info-column">
+
+      <!-- Interactive Mascot Control Center -->
+      <div class="control-panel">
+        <div class="control-title">Test Corti's Emotional States</div>
+        <div class="mascot-triggers">
+          <button class="trigger-btn active" data-state="focused">
+            <span class="trigger-icon">🧐</span>
+            <span>Focused</span>
+          </button>
+          <button class="trigger-btn" data-state="sleepy">
+            <span class="trigger-icon">😴</span>
+            <span>Sleepy</span>
+          </button>
+          <button class="trigger-btn" data-state="foggy">
+            <span class="trigger-icon">🌀</span>
+            <span>Brain Fog</span>
+          </button>
+          <button class="trigger-btn" data-state="celebrating">
+            <span class="trigger-icon">🥳</span>
+            <span>Celebrating</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Explanations linked to the shared article -->
+      <!-- Explanation 1: Home Screen Design Logic -->
+      <div class="tab-explain-card active" id="explain-home">
+        <span class="explain-tag home-tag">Home Tab (Endel Clone)</span>
+        <h2 class="explain-title">Mascot-Driven Focus Dial</h2>
+        <p class="explain-para">Our central orange button is inspired by Endel's generative flow. But dry soundscapes
+          don't offer long-term hook loops. By positioning <strong>Corti</strong> directly inside the focus progress
+          dial, we anchor the session's goal onto Corti's state.</p>
+
+        <div class="highlight-box">
+          <div class="highlight-title">The Yazio Calorie Tracker Principle</div>
+          <div class="highlight-desc">Just as Yazio uses a character to make counting numbers feel less clinical, Corti
+            sits in the center of the dial to make ADHD focus sessions feel like checking on a companion rather than
+            looking at a stopwatch.</div>
+        </div>
+
+        <div class="highlight-box">
+          <div class="highlight-title">Interactive Dial Feedback</div>
+          <div class="highlight-desc">When you click "Start Focus Session", the dial progress ticks down and Corti
+            instantly puts on reading glasses and begins concentrating. This shifts the interaction from passive sound
+            listening to active joint focus.</div>
+        </div>
+      </div>
+
+      <!-- Explanation 2: Sleepy / Sleep Screen Design Logic -->
+      <div class="tab-explain-card" id="explain-Sleepy">
+        <span class="explain-tag Sleepy-tag">Sleep Tab (Somora / Sleepy)</span>
+        <h2 class="explain-title">Cozy Sleep Accompaniment</h2>
+        <p class="explain-para">The sleep stages & sounds (inspired by Somora and Sleepy) are critical utilities, but
+          they lack daily retention when the user is tired. By linking these states to Corti, we make wind-down times
+          warm and friendly.</p>
+
+        <div class="highlight-box purple-left">
+          <div class="highlight-title">The Finch Virtual Pet Loop</div>
+          <div class="highlight-desc">When you enter sleep mode, Corti puts on a cozy sleeping cap and drifts to sleep.
+            Sticking to your bedtime schedule lets Corti sleep peacefully, utilizing the virtual pet caretakers loop to
+            prevent late-night screen scrolling.</div>
+        </div>
+      </div>
+
+      <!-- Explanation 3: Timer Screen Design Logic -->
+      <div class="tab-explain-card" id="explain-timer">
+        <span class="explain-tag timer-tag">Timer Tab (Pomodoro / Focus Kit)</span>
+        <h2 class="explain-title">Intense Focus Tasks</h2>
+        <p class="explain-para">Pomodoro apps can feel rigid and frustrating for ADHD brains. Corti humanizes this
+          clock, shifting attention from elapsed minutes to joint task accomplishment.</p>
+
+        <div class="highlight-box blue-left">
+          <div class="highlight-title">Visual Accountability Partner</div>
+          <div class="highlight-desc">As the clock ticks, Corti works alongside you. If you click pause, Corti looks up
+            with curious dazed eyes, gently prompting you to resume without using standard nagging push alerts.</div>
+        </div>
+      </div>
+
+      <!-- Explanation 4: Habits Screen Design Logic -->
+      <div class="tab-explain-card" id="explain-habits">
+        <span class="explain-tag habits-tag">Habits Tab (HabitKit Clone)</span>
+        <h2 class="explain-title">Habit Kit Garden Growth</h2>
+        <p class="explain-para">ADHD users struggle to maintain streaks on standard grid trackers (like HabitKit). We
+          gamify this screen by transforming the tracking grid into a digital garden.</p>
+
+        <div class="highlight-box green-left">
+          <div class="highlight-title">Finch Habit-Sprout Reward Mechanism</div>
+          <div class="highlight-desc">Clicking checkmark on "Hydration Boost" or "Morning Mindfulness" does not just
+            fill a tile. <strong>It prompts Corti to fly down and water the tile, causing a green sprout to
+              grow.</strong> This visual reward creates a powerful immediate hit of dopamine, driving high day-over-day
+            engagement.</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Tab switching inside phone mockup and right explanations
+    const navItems = document.querySelectorAll('.phone-nav-item');
+    const screenContents = document.querySelectorAll('.screen-content');
+    const explainCards = document.querySelectorAll('.tab-explain-card');
+
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const targetTab = item.getAttribute('data-tab');
+
+        // Remove active state from navs
+        navItems.forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+
+        // Toggle screen contents
+        screenContents.forEach(screen => {
+          screen.classList.remove('active');
+          if (screen.id === `tab-${targetTab}`) {
+            screen.classList.add('active');
+          }
+        });
+
+        // Toggle explain cards
+        explainCards.forEach(card => {
+          card.classList.remove('active');
+          if (card.id === `explain-${targetTab}`) {
+            card.classList.add('active');
+          }
+        });
+
+        // Sync mascot state depending on tab
+        if (targetTab === 'Sleepy') {
+          setMascotState('sleepy');
+        } else if (targetTab === 'timer') {
+          setMascotState('focused');
+        } else {
+          setMascotState('celebrating');
+        }
+      });
+    });
+
+    // Mascot Emotional State Selector
+    const triggerButtons = document.querySelectorAll('.trigger-btn');
+    const cloudElement = document.querySelector('.mascot-cloud');
+    const glowLayer = document.querySelector('#corti-glow-layer');
+    const eyesElement = document.querySelector('#corti-eyes');
+    const mouthElement = document.querySelector('#corti-mouth');
+    const glasses = document.querySelector('#corti-glasses');
+    const cap = document.querySelector('#corti-cap');
+    const fog = document.querySelector('#corti-fog');
+    const confetti = document.querySelector('#corti-confetti');
+
+    triggerButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        triggerButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const state = btn.getAttribute('data-state');
+        setMascotState(state);
+      });
+    });
+
+    function setMascotState(state) {
+      // Reset all custom visual layers
+      glasses.style.opacity = '0';
+      cap.style.opacity = '0';
+      fog.style.opacity = '0';
+      confetti.style.opacity = '0';
+      cloudElement.style.fill = '#FFFFFF';
+
+      // Reset eyes and mouth
+      eyesElement.innerHTML = `<circle cx="42" cy="48" r="3.5" /><circle cx="58" cy="48" r="3.5" />`;
+      mouthElement.setAttribute('d', 'M 46,57 Q 50,61 54,57');
+
+      // Update button highlights
+      triggerButtons.forEach(b => {
+        b.classList.remove('active');
+        if (b.getAttribute('data-state') === state) {
+          b.classList.add('active');
+        }
+      });
+
+      if (state === 'focused') {
+        glowLayer.style.filter = 'drop-shadow(0 0 10px rgba(255, 126, 71, 0.7))';
+        glasses.style.opacity = '1';
+        cloudElement.style.fill = '#FFEFE6';
+      } else if (state === 'sleepy') {
+        glowLayer.style.filter = 'drop-shadow(0 0 10px rgba(155, 126, 222, 0.7))';
+        cap.style.opacity = '1';
+        cloudElement.style.fill = '#F3EFFF';
+        // Closed eyes
+        eyesElement.innerHTML = `
+          <path d="M 39,49 Q 42,52 45,49" stroke="#08080A" stroke-width="2.5" stroke-linecap="round" fill="none" />
+          <path d="M 55,49 Q 58,52 61,49" stroke="#08080A" stroke-width="2.5" stroke-linecap="round" fill="none" />
+        `;
+        mouthElement.setAttribute('d', 'M 48,58 Q 50,60 52,58');
+      } else if (state === 'foggy') {
+        glowLayer.style.filter = 'drop-shadow(0 0 10px rgba(155, 155, 175, 0.4))';
+        fog.style.opacity = '1';
+        cloudElement.style.fill = '#EAEAEF';
+        // Dizzy spiral eyes
+        eyesElement.innerHTML = `
+          <path d="M 39,48 Q 42,45 42,48 Q 42,51 39,51 Q 36,48 39,45" stroke="#08080A" stroke-width="2" fill="none" />
+          <path d="M 55,48 Q 58,45 58,48 Q 58,51 55,51 Q 52,48 55,45" stroke="#08080A" stroke-width="2" fill="none" />
+        `;
+        mouthElement.setAttribute('d', 'M 47,59 Q 50,56 53,59');
+      } else if (state === 'celebrating') {
+        glowLayer.style.filter = 'drop-shadow(0 0 10px rgba(78, 205, 196, 0.7))';
+        confetti.style.opacity = '1';
+        cloudElement.style.fill = '#E8FAF8';
+        // Winking/happy eyes
+        eyesElement.innerHTML = `
+          <path d="M 38,50 L 44,46" stroke="#08080A" stroke-width="3" stroke-linecap="round" />
+          <path d="M 38,46 L 44,50" stroke="#08080A" stroke-width="3" stroke-linecap="round" />
+          <path d="M 56,50 L 62,46" stroke="#08080A" stroke-width="3" stroke-linecap="round" />
+          <path d="M 56,46 L 62,50" stroke="#08080A" stroke-width="3" stroke-linecap="round" />
+        `;
+        mouthElement.setAttribute('d', 'M 45,55 Q 50,62 55,55 Z');
+      }
+    }
+
+    // Central Home Dial Focus Timer Start/Stop simulation
+    let isDialTicking = false;
+    let dialInterval = null;
+    let dialOffset = 90;
+    const dialBar = document.getElementById('home-dial-bar');
+    const dialActionBtn = document.getElementById('home-timer-action');
+
+    dialActionBtn.addEventListener('click', () => {
+      if (isDialTicking) {
+        clearInterval(dialInterval);
+        dialActionBtn.querySelector('span').innerText = 'Start Focus Session';
+        isDialTicking = false;
+        setMascotState('celebrating');
+      } else {
+        setMascotState('focused');
+        dialActionBtn.querySelector('span').innerText = 'Pause Session';
+        isDialTicking = true;
+        dialInterval = setInterval(() => {
+          dialOffset += 5;
+          if (dialOffset > 377) {
+            dialOffset = 90;
+            clearInterval(dialInterval);
+            dialActionBtn.querySelector('span').innerText = 'Start Focus Session';
+            isDialTicking = false;
+            setMascotState('celebrating');
+          }
+          dialBar.style.strokeDashoffset = dialOffset;
+        }, 100);
+      }
+    });
+
+    // Sub-Screen 3: Timer countdown simulation
+    let isTimerTicking = false;
+    let timerClockInterval = null;
+    let timerMins = 24;
+    let timerSecs = 59;
+    const timerDisplay = document.getElementById('main-timer-clock');
+    const timerActionBtn = document.getElementById('timer-screen-action');
+
+    timerActionBtn.addEventListener('click', () => {
+      if (isTimerTicking) {
+        clearInterval(timerClockInterval);
+        timerActionBtn.querySelector('span').innerText = 'Start Focus';
+        isTimerTicking = false;
+        setMascotState('celebrating');
+      } else {
+        setMascotState('focused');
+        timerActionBtn.querySelector('span').innerText = 'Pause Focus';
+        isTimerTicking = true;
+        timerClockInterval = setInterval(() => {
+          timerSecs--;
+          if (timerSecs < 0) {
+            timerSecs = 59;
+            timerMins--;
+          }
+          if (timerMins < 0) {
+            timerMins = 24;
+            timerSecs = 59;
+            clearInterval(timerClockInterval);
+            timerActionBtn.querySelector('span').innerText = 'Start Focus';
+            isTimerTicking = false;
+            setMascotState('celebrating');
+          }
+          timerDisplay.innerText = `${timerMins}:${timerSecs < 10 ? '0' : ''}${timerSecs}`;
+        }, 1000);
+      }
+    });
+
+    // Sound item active toggle
+    const soundItems = document.querySelectorAll('.sound-item');
+    soundItems.forEach(item => {
+      item.addEventListener('click', () => {
+        soundItems.forEach(s => s.classList.remove('active'));
+        item.classList.add('active');
+        setMascotState('sleepy');
+      });
+    });
+
+    // Habit item completion and sprout trigger
+    function completeHabit(id) {
+      const card = document.getElementById(id);
+      const isCompleted = card.classList.toggle('completed');
+      const tick = card.querySelector('.check-tick');
+
+      if (isCompleted) {
+        tick.style.display = 'block';
+        setMascotState('celebrating');
+        // Visual alert
+        setTimeout(() => {
+          setMascotState('focused');
+        }, 1200);
+      } else {
+        tick.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+
+</html>

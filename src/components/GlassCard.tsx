@@ -16,14 +16,14 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, accentBorder = f
 };
 
 const CardContainer = styled.TouchableOpacity<{ accentBorder: boolean }>`
-  background-color: rgba(18, 18, 23, 0.85);
+  background-color: rgba(255, 255, 255, 0.03);
   border-radius: 18px;
-  border-width: 1px;
-  border-color: ${props => props.accentBorder ? '#FF7E47' : '#1E1E26'};
+  border-width: 0.8px;
+  border-color: ${props => props.accentBorder ? '#FF7E47' : 'rgba(255, 255, 255, 0.08)'};
   padding: 16px;
   shadow-color: #000;
-  shadow-offset: 0px 6px;
-  shadow-opacity: 0.45;
-  shadow-radius: 12px;
-  elevation: 6;
+  shadow-offset: 0px 4px;
+  shadow-opacity: 0.25;
+  shadow-radius: 8px;
+  elevation: 4;
 `;

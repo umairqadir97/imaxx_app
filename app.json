@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "dopamind-temp",
-    "slug": "dopamind-temp",
+    "name": "iMaxx-temp",
+    "slug": "iMaxx-temp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.supercellapps.dopamindtemp",
+      "bundleIdentifier": "com.supercellapps.iMaxxtemp",
       "newArchEnabled": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -23,7 +23,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "newArchEnabled": false,
-      "package": "com.supercellapps.dopamindtemp"
+      "package": "com.supercellapps.iMaxxtemp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +32,9 @@
       "eas": {
         "projectId": "631b224d-caaa-4635-b828-334dd57a67ba"
       }
-    }
+    },
+    "plugins": [
+      "expo-audio"
+    ]
   }
 }

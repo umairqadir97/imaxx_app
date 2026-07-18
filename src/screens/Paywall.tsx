@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { PanResponder } from 'react-native';
 import styled from 'styled-components/native';
 import { Sparkles, Check, X, Shield, Award, Calendar } from 'lucide-react-native';
 import { useAppDispatch } from '../store';
@@ -18,15 +19,36 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose }) => {
     onClose();
   };
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const { dy, dx } = gestureState;
+        // Respond to downward swipes
+        return dy > 45 && Math.abs(dx) < 30;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dy } = gestureState;
+        if (dy > 90) {
+          onClose();
+        }
+      },
+    })
+  ).current;
+
   return (
     <Container>
-      {/* Top Close bar */}
-      <HeaderBar>
-        <Spacer />
-        <CloseButton onPress={onClose}>
-          <X size={20} color="#FFFFFF" />
-        </CloseButton>
-      </HeaderBar>
+      <HeaderWrapper {...panResponder.panHandlers}>
+        <GestureIndicatorContainer>
+          <GestureIndicatorBar />
+        </GestureIndicatorContainer>
+        {/* Top Close bar */}
+        <HeaderBar>
+          <Spacer />
+          <CloseButton onPress={onClose}>
+            <X size={20} color="#FFFFFF" />
+          </CloseButton>
+        </HeaderBar>
+      </HeaderWrapper>
 
       <ScrollContent showsVerticalScrollIndicator={false}>
         {/* Crown Illustration */}
@@ -90,13 +112,13 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose }) => {
         <PlanCard active={selectedPlan === 'plus'} onPress={() => setSelectedPlan('plus')}>
           <PlanHeaderRow>
             <PlanInfo>
-              <PlanTitle>Dopamind Plus</PlanTitle>
+              <PlanTitle>iMaxx Plus</PlanTitle>
               <PlanSubtitle>All Soundscapes & Co-Working Rooms</PlanSubtitle>
             </PlanInfo>
             <RadioCircle active={selectedPlan === 'plus'} />
           </PlanHeaderRow>
           <PlanPriceRow>
-            <PriceText>$4.99 / week</PriceText>
+            <PriceText>$6.99 / week</PriceText>
             <SaveBadge><SaveText>SAVE 35% ANNUALLY</SaveText></SaveBadge>
           </PlanPriceRow>
           <PlanSubDetails>Or billing annually at $39.99/year</PlanSubDetails>
@@ -105,7 +127,7 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose }) => {
         <PlanCard active={selectedPlan === 'pro'} onPress={() => setSelectedPlan('pro')}>
           <PlanHeaderRow>
             <PlanInfo>
-              <PlanTitle>Dopamind Pro</PlanTitle>
+              <PlanTitle>iMaxx Pro</PlanTitle>
               <PlanSubtitle>Everything in Plus + ADHD Coaching</PlanSubtitle>
             </PlanInfo>
             <RadioCircle active={selectedPlan === 'pro'} />
@@ -276,7 +298,7 @@ const FeatureVal = styled.View`
   align-items: center;
 `;
 
-const PlanCard = styled(GlassCard)<{ active: boolean }>`
+const PlanCard = styled(GlassCard) <{ active: boolean }>`
   margin-bottom: 12px;
   padding: 16px;
   border-color: ${props => props.active ? '#9B7EDE' : 'rgba(255,255,255,0.06)'};
@@ -383,4 +405,25 @@ const GuaranteeText = styled.Text`
 
 const ExtraSpacing = styled.View`
   height: 100px;
+`;
+
+const GestureIndicatorContainer = styled.View`
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-top: 10px;
+  padding-bottom: 5px;
+  background-color: transparent;
+`;
+
+const GestureIndicatorBar = styled.View`
+  width: 40px;
+  height: 5px;
+  border-radius: 2.5px;
+  background-color: rgba(255, 255, 255, 0.2);
+`;
+
+const HeaderWrapper = styled.View`
+  background-color: transparent;
+  width: 100%;
 `;

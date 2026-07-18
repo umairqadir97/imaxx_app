@@ -9,7 +9,7 @@ import Animated, {
   Easing,
   withSequence,
 } from 'react-native-reanimated';
-import { Play, Pause, RotateCcw, Clock, PieChart, BarChart2, Star, Briefcase, Book, Sparkles, Dumbbell, Code, Smile, Settings, Plus, Minus, ChevronUp, ChevronDown } from 'lucide-react-native';
+import { Play, Pause, RotateCcw, Clock, PieChart, BarChart2, Star, Briefcase, Book, Sparkles, Dumbbell, Code, Smile, Settings, Plus, Minus, ChevronUp, ChevronDown, X } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store';
 import {
   setTimerMode,
@@ -34,29 +34,16 @@ import { GlassCard } from '../components/GlassCard';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // ---------------------------------------------------------------------------
-// PHASE-CHANGE NOTIFICATION: vibration + audio beep
+// PHASE-CHANGE NOTIFICATION: vibration only (expo-av removed — was crashing)
 // ---------------------------------------------------------------------------
-let _audioBeep: any = null;
 const triggerPhaseNotification = async () => {
   try {
-    // Web vibration
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([200, 100, 200]);
     }
-    // React Native vibration
     Vibration.vibrate([200, 100, 200]);
-    // Audio beep via expo-av
-    const { Audio } = require('expo-av');
-    if (!_audioBeep) {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3' },
-        { shouldPlay: false, volume: 0.6 }
-      );
-      _audioBeep = sound;
-    }
-    await _audioBeep.replayAsync();
   } catch (e) {
-    // Silently fail if audio isn't available
+    // Silently fail
   }
 };
 
@@ -79,12 +66,12 @@ const FloatingBubble: React.FC<{ size: number; color: string; startX: number; st
 
   useEffect(() => {
     transX.value = withRepeat(
-      withTiming(Math.random() * 60 - 30, { duration: 6000 + Math.random() * 4000, easing: Easing.inOut(Easing.ease) }),
+      withTiming(Math.random() * 60 - 30, { duration: 3000 + Math.random() * 2000, easing: Easing.inOut(Easing.ease) }),
       -1,
       true
     );
     transY.value = withRepeat(
-      withTiming(Math.random() * 100 - 50, { duration: 7000 + Math.random() * 3000, easing: Easing.inOut(Easing.ease) }),
+      withTiming(Math.random() * 100 - 50, { duration: 3500 + Math.random() * 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
       true
     );
@@ -122,21 +109,25 @@ export const AmbientFloatingOrbs: React.FC = () => {
   );
 };
 
-const PulsingRing: React.FC<{ maxScale: number }> = ({ maxScale }) => {
-  const scale = useSharedValue(0.4);
-  const opacity = useSharedValue(0.6);
+const PulsingRing: React.FC<{ maxScale: number; delay: number }> = ({ maxScale, delay }) => {
+  const scale = useSharedValue(0.1);
+  const opacity = useSharedValue(0.8);
 
   useEffect(() => {
-    scale.value = withRepeat(
-      withTiming(maxScale, { duration: 4000, easing: Easing.out(Easing.ease) }),
-      -1,
-      false
-    );
-    opacity.value = withRepeat(
-      withTiming(0, { duration: 4000, easing: Easing.out(Easing.ease) }),
-      -1,
-      false
-    );
+    const timer = setTimeout(() => {
+      // NOTE TO USER: Adjust 'duration' (currently 4000ms) inside withTiming here to change the speed of the radar waves. Lower duration is faster.
+      scale.value = withRepeat(
+        withTiming(maxScale, { duration: 4000, easing: Easing.out(Easing.ease) }),
+        -1,
+        false
+      );
+      opacity.value = withRepeat(
+        withTiming(0, { duration: 4000, easing: Easing.out(Easing.ease) }),
+        -1,
+        false
+      );
+    }, delay);
+    return () => clearTimeout(timer);
   }, []);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -150,12 +141,129 @@ const PulsingRing: React.FC<{ maxScale: number }> = ({ maxScale }) => {
 export const RadarWaveBackground: React.FC = () => {
   return (
     <AbsoluteCanvas pointerEvents="none" style={{ justifyContent: 'center', alignItems: 'center' }}>
-      <PulsingRing maxScale={1.8} />
-      <PulsingRing maxScale={2.4} />
-      <PulsingRing maxScale={3.0} />
+      {/* Set A (Group 1) */}
+      <PulsingRing maxScale={3.4} delay={0} />
+      <PulsingRing maxScale={3.4} delay={350} />
+      <PulsingRing maxScale={3.4} delay={700} />
+
+      {/* Set B (Group 2 - starts 2 seconds later, before Set A disappears) */}
+      <PulsingRing maxScale={3.4} delay={2000} />
+      <PulsingRing maxScale={3.4} delay={2350} />
+      <PulsingRing maxScale={3.4} delay={2700} />
     </AbsoluteCanvas>
   );
 };
+
+const AnimatedOrbitalContainer = Animated.createAnimatedComponent(styled.View`
+  position: absolute;
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
+  justify-content: center;
+  align-items: center;
+`);
+
+const CelestialBody = styled.View<{ color: string }>`
+  position: absolute;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: ${props => props.color};
+  shadow-color: ${props => props.color};
+  shadow-opacity: 0.8;
+  shadow-radius: 4px;
+`;
+
+const CelestialBodySecondary = styled.View<{ color: string }>`
+  position: absolute;
+  bottom: -3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: ${props => props.color};
+`;
+
+const TwinklingStar: React.FC<{ size: number; x: number; y: number; delay: number }> = ({ size, x, y, delay }) => {
+  const opacity = useSharedValue(0.3);
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration: 1500 + Math.random() * 1000 }),
+        withTiming(0.2, { duration: 1500 + Math.random() * 1000 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value
+  }));
+  return (
+    <Animated.View
+      style={[
+        animStyle,
+        {
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#FFFFFF',
+          left: x,
+          top: y,
+        }
+      ]}
+    />
+  );
+};
+
+const OrbitalRing: React.FC<{ size: number; duration: number; clockwise: boolean }> = ({ size, duration, clockwise }) => {
+  const rotation = useSharedValue(0);
+  useEffect(() => {
+    rotation.value = withRepeat(
+      withTiming(clockwise ? 360 : -360, { duration, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }]
+  }));
+  return (
+    <AnimatedOrbitalContainer
+      style={[
+        animStyle,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+        }
+      ]}
+    >
+      <CelestialBody color="#FF7E47" />
+      <CelestialBodySecondary color="#9B7EDE" />
+    </AnimatedOrbitalContainer>
+  );
+};
+
+export const CelestialEndelBackground: React.FC = () => {
+  return (
+    <AbsoluteCanvas pointerEvents="none" style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <TwinklingStar size={2.5} x={SCREEN_WIDTH * 0.12} y={SCREEN_HEIGHT * 0.18} delay={0} />
+      <TwinklingStar size={3} x={SCREEN_WIDTH * 0.82} y={SCREEN_HEIGHT * 0.22} delay={500} />
+      <TwinklingStar size={1.8} x={SCREEN_WIDTH * 0.22} y={SCREEN_HEIGHT * 0.46} delay={1000} />
+      <TwinklingStar size={2.8} x={SCREEN_WIDTH * 0.72} y={SCREEN_HEIGHT * 0.52} delay={1500} />
+      <TwinklingStar size={2} x={SCREEN_WIDTH * 0.08} y={SCREEN_HEIGHT * 0.68} delay={2000} />
+      <TwinklingStar size={3} x={SCREEN_WIDTH * 0.88} y={SCREEN_HEIGHT * 0.62} delay={2500} />
+      <TwinklingStar size={1.5} x={SCREEN_WIDTH * 0.28} y={SCREEN_HEIGHT * 0.78} delay={3000} />
+      <TwinklingStar size={2.2} x={SCREEN_WIDTH * 0.72} y={SCREEN_HEIGHT * 0.8} delay={3500} />
+
+      {/* NOTE TO USER: Adjust 'size' parameters (currently 320 and 380) below to change the diameter of the flip clock orbital waves. */}
+      <OrbitalRing size={320} duration={26000} clockwise={true} />
+      <OrbitalRing size={380} duration={38000} clockwise={false} />
+    </AbsoluteCanvas>
+  );
+};
+
 
 // -------------------------------------------------------------
 // STANDALONE AMBIENT FLIP CARD DIGITS
@@ -188,27 +296,28 @@ const FlipCardDigits = React.memo<FlipCardDigitsProps>(
         return;
       }
 
-      // Capture current shown value as prev before updating
-      const prev = displayTop;
       setNextDigit(digits);
 
       // Phase 1: fold the top flap down (prev digit disappears from top)
       animTop.setValue(1);
       RNAnimated.timing(animTop, {
         toValue: 0,
-        duration: 150,
+        duration: 180,
         useNativeDriver: false,
       }).start(() => {
-        // Mid-point: swap top background and bottom flap to new digit
         setDisplayTop(digits);
-        setDisplayBottom(digits);
         // Phase 2: unfold the bottom flap (new digit appears from bottom)
         animBottom.setValue(0);
         RNAnimated.timing(animBottom, {
           toValue: 1,
-          duration: 150,
+          duration: 180,
           useNativeDriver: false,
         }).start();
+
+        // Delay the lower half number update slightly for smooth flip transition
+        setTimeout(() => {
+          setDisplayBottom(digits);
+        }, 100);
       });
     }, [triggerVal]);
 
@@ -245,16 +354,20 @@ const FlipCardDigits = React.memo<FlipCardDigitsProps>(
           </CardHalfBottom>
 
           {/* Animated top flap — folds away (shows prev digit top half) */}
-          <RNAnimated.View style={[{ position: 'absolute', top: 0, left: 0, width: 90, height: 55, overflow: 'hidden', zIndex: 3,
+          <RNAnimated.View style={[{
+            position: 'absolute', top: 0, left: 0, width: 90, height: 55, overflow: 'hidden', zIndex: 3,
             borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: '#121217',
-            borderWidth: 1.5, borderColor: '#1E1E26', borderBottomWidth: 0 }, topFlapStyle]}>
+            borderWidth: 1.5, borderColor: '#1E1E26', borderBottomWidth: 0
+          }, topFlapStyle]}>
             <FlipNumberText numberOfLines={1}>{displayTop}</FlipNumberText>
           </RNAnimated.View>
 
           {/* Animated bottom flap — unfolds in (shows new digit bottom half) */}
-          <RNAnimated.View style={[{ position: 'absolute', bottom: 0, left: 0, width: 90, height: 55, overflow: 'hidden', zIndex: 3,
+          <RNAnimated.View style={[{
+            position: 'absolute', bottom: 0, left: 0, width: 90, height: 55, overflow: 'hidden', zIndex: 3,
             borderBottomLeftRadius: 14, borderBottomRightRadius: 14, backgroundColor: '#121217',
-            borderWidth: 1.5, borderColor: '#1E1E26', borderTopWidth: 0 }, bottomFlapStyle]}>
+            borderWidth: 1.5, borderColor: '#1E1E26', borderTopWidth: 0
+          }, bottomFlapStyle]}>
             <FlipNumberText numberOfLines={1} style={{ top: -55 }}>{nextDigit}</FlipNumberText>
           </RNAnimated.View>
 
@@ -370,17 +483,17 @@ const SwipeDial: React.FC<{ onIncrement?: () => void; onDecrement?: () => void }
   };
 
   return (
-    <View 
-      style={{ position: 'absolute', right: -18, top: 28, width: 24, height: 54, alignItems: 'center', justifyContent: 'center', zIndex: 20 } as any}
+    <View
+      style={{ position: 'absolute', right: -22, top: 28, width: 32, height: 60, alignItems: 'center', justifyContent: 'center', zIndex: 20 } as any}
       {...panResponder.panHandlers}
       {...(Platform.OS === 'web' ? { onMouseDown: onMouseDownWeb } : {})}
     >
       <GearDialKnob style={{ position: 'relative', right: 0, top: 0, cursor: 'ns-resize' } as any}>
         <GearDialStripe />
-        <GearDialStripe style={{ marginTop: 3 }} />
-        <GearDialStripe style={{ marginTop: 3 }} />
-        <GearDialStripe style={{ marginTop: 3 }} />
-        <GearDialStripe style={{ marginTop: 3 }} />
+        <GearDialStripe />
+        <GearDialStripe />
+        <GearDialStripe />
+        <GearDialStripe />
       </GearDialKnob>
     </View>
   );
@@ -412,6 +525,7 @@ export const FocusTimerTab: React.FC = () => {
     sessionElapsedSeconds,
     currentPhase,
     sessionActive,
+    categoryFocusSeconds,
   } = useAppSelector((state) => state.audio);
 
   const pomoFocusDurationRef = useRef(pomoFocusDuration);
@@ -484,8 +598,8 @@ export const FocusTimerTab: React.FC = () => {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
-    if (h > 0) return `${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
-    return `${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
+    if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
+    return `${m.toString().padStart(2, '0')}m ${s.toString().padStart(2, '0')}s`;
   };
 
   const handleModeChange = (mode: 'pomo' | 'short_break' | 'long_break') => {
@@ -533,18 +647,60 @@ export const FocusTimerTab: React.FC = () => {
     dispatch(setPomoBreakDuration(Math.max(60, Math.min(359900, nextDuration))));
   };
 
+  const SUB_SCREENS: ('timer' | 'stats')[] = ['timer', 'stats'];
+
+  const handlePressSettingsInNav = () => {
+    if (activeSubScreen !== 'timer') {
+      dispatch(setActiveSubScreen('timer'));
+    }
+    setShowDropdown(true);
+  };
+
+  const handleSubSwipeLeft = () => {
+    const currentIndex = SUB_SCREENS.indexOf(activeSubScreen as any);
+    if (currentIndex >= 0 && currentIndex < SUB_SCREENS.length - 1) {
+      dispatch(setActiveSubScreen(SUB_SCREENS[currentIndex + 1]));
+    }
+  };
+
+  const handleSubSwipeRight = () => {
+    const currentIndex = SUB_SCREENS.indexOf(activeSubScreen as any);
+    if (currentIndex > 0) {
+      dispatch(setActiveSubScreen(SUB_SCREENS[currentIndex - 1]));
+    }
+  };
+
+  const subPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        // Set pan responder only for horizontal swipes
+        return Math.abs(dx) > 40 && Math.abs(dy) < 30;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx } = gestureState;
+        if (dx < -60) {
+          handleSubSwipeLeft();
+        } else if (dx > 60) {
+          handleSubSwipeRight();
+        }
+      },
+    })
+  ).current;
+
   return (
-    <Container>
+    <Container {...subPanResponder.panHandlers}>
+      {/* Global Ambient Orbs for rich color contrasts */}
+      <AmbientOrb style={{ top: -80, left: -80, backgroundColor: '#FF7E47' }} />
+      <AmbientOrb style={{ bottom: 120, right: -100, backgroundColor: '#9B7EDE' }} />
+      <AmbientOrb style={{ top: '35%', left: '15%', backgroundColor: '#00F2FE', width: 240, height: 240, opacity: 0.08 }} />
+
       <HeaderBar>
-        <HeaderTitle>Focus Timer</HeaderTitle>
+        <HeaderTitle>Focus Session</HeaderTitle>
       </HeaderBar>
 
       {activeSubScreen === 'timer' && (
         <SubContainer>
-          {/* Ambient Backgrounds */}
-          {animationStyle === 'falling' && <AmbientFloatingOrbs />}
-          {animationStyle === 'orb' && <RadarWaveBackground />}
-
           {/* Toggle Tab Selectors - Auto Hides during session */}
           {!sessionActive && (
             <FocusTypeTabs>
@@ -575,6 +731,11 @@ export const FocusTimerTab: React.FC = () => {
 
           {/* TIMER CONTENT AREA */}
           <TimerContentArea>
+            {/* Ambient Backgrounds centered on the clock numbers! */}
+            {animationStyle === 'falling' && <AmbientFloatingOrbs />}
+            {animationStyle === 'orb' && <RadarWaveBackground />}
+            {animationStyle === 'flip' && <CelestialEndelBackground />}
+
             {!sessionActive && animationStyle === 'flip' && (
               <DateTimeText>{currentDateTime}</DateTimeText>
             )}
@@ -734,7 +895,7 @@ export const FocusTimerTab: React.FC = () => {
                     </OptionSelectionRow>
                   </ConfigRow>
 
-                 </ConfigSection>
+                </ConfigSection>
               </DropdownOverlayCard>
             </BackdropPressable>
           )}
@@ -768,122 +929,140 @@ export const FocusTimerTab: React.FC = () => {
         <SubContainerScroll contentContainerStyle={{ paddingBottom: 160 }}>
           <StatsHeaderRow>
             <StatsHeaderTitle>Focus Stats</StatsHeaderTitle>
-            <StatsFilterGroup>
-              {['D', 'W', 'M', 'Y'].map((f) => (
-                <FilterPill key={f} active={f === 'D'}>
-                  <FilterPillText active={f === 'D'}>{f}</FilterPillText>
-                </FilterPill>
-              ))}
-            </StatsFilterGroup>
+            <RightHeaderGroup>
+              <StatsFilterGroup style={{ marginRight: 8 }}>
+                {['D', 'W', 'M', 'Y'].map((f) => (
+                  <FilterPill key={f} active={f === 'D'}>
+                    <FilterPillText active={f === 'D'}>{f}</FilterPillText>
+                  </FilterPill>
+                ))}
+              </StatsFilterGroup>
+              <StatsCloseButton onPress={() => dispatch(setActiveSubScreen('timer'))}>
+                <X size={16} color="#FFFFFF" />
+              </StatsCloseButton>
+            </RightHeaderGroup>
           </StatsHeaderRow>
 
-          <StatsRowGrid>
-            <StatsMiniCard>
-              <StatsValueLabel>Total Pomodoros</StatsValueLabel>
-              <StatsBigNumber>🍅 {completedPomodorosCount}</StatsBigNumber>
-            </StatsMiniCard>
-            <StatsMiniCard>
-              <StatsValueLabel>Total Days Active</StatsValueLabel>
-              <StatsBigNumber>18</StatsBigNumber>
-            </StatsMiniCard>
-          </StatsRowGrid>
+          {/* Dynamic Statistics Panel (Real data calculation) */}
+          {(() => {
+            const activeDaysCount = weeklyFocusMinutes.filter(m => m > 0).length || 1;
+            const totalDaysActive = completedPomodorosCount > 0 ? Math.max(activeDaysCount, Math.ceil(completedPomodorosCount / 3)) : 1;
 
-          <StatsMiniCard style={{ width: '100%', marginTop: 12 }}>
-            <StatsValueLabel>Today's Focus Time</StatsValueLabel>
-            <StatsBigNumber>12h 45m</StatsBigNumber>
-            <StatsValueLabel style={{ marginTop: 12 }}>Total Focus Accumulated</StatsValueLabel>
-            <StatsBigNumber>{Math.floor(totalFocusSeconds / 3600)}h 42m</StatsBigNumber>
-          </StatsMiniCard>
+            const todayMins = weeklyFocusMinutes[new Date().getDay()] || 0;
+            const todayH = Math.floor(todayMins / 60);
+            const todayM = todayMins % 60;
+            const todayFocusStr = todayH > 0 ? `${todayH}h ${todayM}m` : `${todayM}m`;
 
-          <StatsHeaderTitle style={{ marginTop: 24, marginBottom: 12 }}>Category Breakdown</StatsHeaderTitle>
-          <StatsGroupCard>
-            <CategoryProgressRow>
-              <ProgressLabelInfo>
-                <ProgressText>English</ProgressText>
-                <ProgressVal>50% (4h)</ProgressVal>
-              </ProgressLabelInfo>
-              <ProgressBarContainer>
-                <ProgressBarFill percent={50} color="#FF7E47" />
-              </ProgressBarContainer>
-            </CategoryProgressRow>
-            <CategoryProgressRow>
-              <ProgressLabelInfo>
-                <ProgressText>Reading</ProgressText>
-                <ProgressVal>30% (2h 24m)</ProgressVal>
-              </ProgressLabelInfo>
-              <ProgressBarContainer>
-                <ProgressBarFill percent={30} color="#FFB347" />
-              </ProgressBarContainer>
-            </CategoryProgressRow>
-          </StatsGroupCard>
-        </SubContainerScroll>
-      )}
+            const accumH = Math.floor(totalFocusSeconds / 3600);
+            const accumM = Math.floor((totalFocusSeconds % 3600) / 60);
+            const accumFocusStr = `${accumH}h ${accumM}m`;
 
-      {activeSubScreen === 'trend' && (
-        <SubContainerScroll contentContainerStyle={{ paddingBottom: 160 }}>
-          <SummaryTitleRow>
-            <SummaryTitle>Summary</SummaryTitle>
-            <SummaryBadge><SummaryBadgeText>BETA</SummaryBadgeText></SummaryBadge>
-          </SummaryTitleRow>
-          <SummaryDateSub>Jul 5, Today</SummaryDateSub>
+            const weeklyMins = weeklyFocusMinutes.reduce((acc, m) => acc + m, 0);
+            const weeklyH = Math.floor(weeklyMins / 60);
+            const weeklyM = weeklyMins % 60;
+            const weeklyFocusStr = `${weeklyH}h ${weeklyM}m`;
 
-          <StatsRowGrid>
-            <StatsMiniCard>
-              <StatsValueLabel>Total Pomodoros</StatsValueLabel>
-              <StatsBigNumber>🍅 {completedPomodorosCount}</StatsBigNumber>
-            </StatsMiniCard>
-            <StatsMiniCard>
-              <StatsValueLabel>Total Focus Hours</StatsValueLabel>
-              <StatsBigNumber>1540 h</StatsBigNumber>
-            </StatsMiniCard>
-          </StatsRowGrid>
+            const catStats = (categoryFocusSeconds || { Work: 600 * 3600, Study: 450 * 3600, Meditate: 120 * 3600, Fitness: 80 * 3600, Code: 200 * 3600, Relax: 90 * 3600 }) as Record<string, number>;
+            const totalCatSeconds = Object.values(catStats).reduce((acc: number, val: number) => acc + val, 0) || 1;
+            const sortedCategories = (Object.entries(catStats) as [string, number][]).sort((a, b) => b[1] - a[1]);
 
-          <FocusTrendSection>
-            <SectionSubtitle>Focus Trend</SectionSubtitle>
-            <StatsGroupCard style={{ padding: 20 }}>
-              <TrendHeaderStatRow>
-                <TrendStatBox>
-                  <TrendStatLabel>Today's Focus</TrendStatLabel>
-                  <TrendStatVal>6h 35m</TrendStatVal>
-                  <TrendChange positive={true}>▲ 20%</TrendChange>
-                </TrendStatBox>
-                <TrendStatBox>
-                  <TrendStatLabel>This Week</TrendStatLabel>
-                  <TrendStatVal>40h 27m</TrendStatVal>
-                  <TrendChange positive={false}>▼ 5%</TrendChange>
-                </TrendStatBox>
-              </TrendHeaderStatRow>
+            // Simple trend calculation compared to baseline average of 5 hours/day
+            const todayAvgMinutes = 300;
+            const trendPercent = Math.min(150, Math.round((todayMins / todayAvgMinutes) * 100));
 
-              <ChartAreaRow>
-                {weeklyFocusMinutes.map((mins, idx) => {
-                  const percentHeight = Math.max(8, (mins / Math.max(...weeklyFocusMinutes, 1)) * 80);
-                  return (
-                    <ChartBarColumn key={idx}>
-                      <ChartBarContainer>
-                        <ChartBarFill height={percentHeight} />
-                      </ChartBarContainer>
-                      <ChartBarLabel>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</ChartBarLabel>
-                    </ChartBarColumn>
-                  );
-                })}
-              </ChartAreaRow>
-            </StatsGroupCard>
-          </FocusTrendSection>
+            return (
+              <>
+                <StatsRowGrid>
+                  <StatsMiniCard>
+                    <StatsValueLabel>Total Pomodoros</StatsValueLabel>
+                    <StatsBigNumber>🍅 {completedPomodorosCount}</StatsBigNumber>
+                  </StatsMiniCard>
+                  <StatsMiniCard>
+                    <StatsValueLabel>Total Days Active</StatsValueLabel>
+                    <StatsBigNumber>{totalDaysActive}</StatsBigNumber>
+                  </StatsMiniCard>
+                </StatsRowGrid>
+
+                <StatsMiniCard style={{ width: '100%', marginTop: 12 }}>
+                  <StatsValueLabel>Today's Focus Time</StatsValueLabel>
+                  <StatsBigNumber>{todayFocusStr}</StatsBigNumber>
+                  <StatsValueLabel style={{ marginTop: 12 }}>Total Focus Accumulated</StatsValueLabel>
+                  <StatsBigNumber>{accumFocusStr}</StatsBigNumber>
+                </StatsMiniCard>
+
+                {/* Combined Trend Section */}
+                <FocusTrendSection style={{ marginTop: 20 }}>
+                  <SectionSubtitle>Focus Trend</SectionSubtitle>
+                  <StatsGroupCard style={{ padding: 20 }}>
+                    <TrendHeaderStatRow>
+                      <TrendStatBox>
+                        <TrendStatLabel>Today's Focus</TrendStatLabel>
+                        <TrendStatVal>{todayFocusStr}</TrendStatVal>
+                        <TrendChange positive={todayMins >= todayAvgMinutes}>
+                          {todayMins >= todayAvgMinutes ? '▲' : '▼'} {trendPercent}%
+                        </TrendChange>
+                      </TrendStatBox>
+                      <TrendStatBox>
+                        <TrendStatLabel>This Week</TrendStatLabel>
+                        <TrendStatVal>{weeklyFocusStr}</TrendStatVal>
+                        <TrendChange positive={weeklyMins >= 1000}>
+                          {weeklyMins >= 1000 ? '▲ Stable' : '▼ Light'}
+                        </TrendChange>
+                      </TrendStatBox>
+                    </TrendHeaderStatRow>
+
+                    <ChartAreaRow>
+                      {weeklyFocusMinutes.map((mins, idx) => {
+                        const percentHeight = Math.max(8, (mins / Math.max(...weeklyFocusMinutes, 1)) * 80);
+                        return (
+                          <ChartBarColumn key={idx}>
+                            <ChartBarContainer>
+                              <ChartBarFill height={percentHeight} />
+                            </ChartBarContainer>
+                            <ChartBarLabel>{['S', 'M', 'T', 'W', 'T', 'F', 'S'][idx]}</ChartBarLabel>
+                          </ChartBarColumn>
+                        );
+                      })}
+                    </ChartAreaRow>
+                  </StatsGroupCard>
+                </FocusTrendSection>
+
+                <StatsHeaderTitle style={{ marginTop: 24, marginBottom: 12 }}>Category Breakdown</StatsHeaderTitle>
+                <StatsGroupCard>
+                  {sortedCategories.map(([catName, seconds]) => {
+                    const pct = Math.round((seconds / totalCatSeconds) * 100);
+                    const hrs = (seconds / 3600).toFixed(1);
+                    const catColor = catName === 'Work' ? '#FF7E47' : catName === 'Study' ? '#4ECDC4' : catName === 'Meditate' ? '#9B7EDE' : catName === 'Fitness' ? '#FFB347' : catName === 'Code' ? '#FF6B6B' : '#E6E6FA';
+                    return (
+                      <CategoryProgressRow key={catName}>
+                        <ProgressLabelInfo>
+                          <ProgressText>{catName}</ProgressText>
+                          <ProgressVal>{pct}% ({hrs}h)</ProgressVal>
+                        </ProgressLabelInfo>
+                        <ProgressBarContainer>
+                          <ProgressBarFill percent={pct} color={catColor} />
+                        </ProgressBarContainer>
+                      </CategoryProgressRow>
+                    );
+                  })}
+                </StatsGroupCard>
+              </>
+            );
+          })()}
         </SubContainerScroll>
       )}
 
       {/* Navigation Stack */}
-      <VerticalNavStack pointerEvents="box-none">
-        <NavCircleButton active={activeSubScreen === 'timer'} onPress={() => dispatch(setActiveSubScreen('timer'))}>
-          <Clock size={18} color={activeSubScreen === 'timer' ? '#08080A' : '#FFFFFF'} />
-        </NavCircleButton>
-        <NavCircleButton active={activeSubScreen === 'stats'} onPress={() => dispatch(setActiveSubScreen('stats'))}>
-          <PieChart size={18} color={activeSubScreen === 'stats' ? '#08080A' : '#FFFFFF'} />
-        </NavCircleButton>
-        <NavCircleButton active={activeSubScreen === 'trend'} onPress={() => dispatch(setActiveSubScreen('trend'))}>
-          <BarChart2 size={18} color={activeSubScreen === 'trend' ? '#08080A' : '#FFFFFF'} />
-        </NavCircleButton>
-      </VerticalNavStack>
+      {!sessionActive && (
+        <VerticalNavStack pointerEvents="box-none">
+          <NavCircleButton active={activeSubScreen === 'timer'} onPress={() => dispatch(setActiveSubScreen('timer'))}>
+            <Clock size={18} color={activeSubScreen === 'timer' ? '#08080A' : '#FFFFFF'} />
+          </NavCircleButton>
+          <NavCircleButton active={activeSubScreen === 'stats'} onPress={() => dispatch(setActiveSubScreen('stats'))}>
+            <PieChart size={18} color={activeSubScreen === 'stats' ? '#08080A' : '#FFFFFF'} />
+          </NavCircleButton>
+        </VerticalNavStack>
+      )}
     </Container>
   );
 };
@@ -894,12 +1073,20 @@ export const FocusTimerTab: React.FC = () => {
 
 const Container = styled.View`
   flex: 1;
-  background-color: transparent;
-  position: relative;
+  background-color: #08080A;
+`;
+
+const AmbientOrb = styled.View`
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 160px;
+  opacity: 0.12;
+  z-index: 0;
+  pointer-events: none;
 `;
 
 const HeaderBar = styled.View`
-  flex-direction: row;
   justify-content: center;
   align-items: center;
   padding: 50px 20px 10px 20px;
@@ -909,8 +1096,8 @@ const HeaderBar = styled.View`
 
 const HeaderTitle = styled.Text`
   color: #FFFFFF;
-  font-size: 17px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 500;
   letter-spacing: 0.5px;
 `;
 
@@ -947,9 +1134,9 @@ const AnimatedBubble = Animated.createAnimatedComponent(styled.View`
 
 const AnimatedRing = Animated.createAnimatedComponent(styled.View`
   position: absolute;
-  width: 140px;
-  height: 140px;
-  border-radius: 70px;
+  width: 180px;
+  height: 180px;
+  border-radius: 90px;
   border-width: 1.5px;
   border-color: #FF7E47;
   shadow-color: #FF7E47;
@@ -960,33 +1147,33 @@ const AnimatedRing = Animated.createAnimatedComponent(styled.View`
 
 const FocusTypeTabs = styled.View`
   flex-direction: row;
-  background-color: rgba(17, 17, 22, 0.65);
-  border-width: 1px;
-  border-color: #1E1E26;
-  border-radius: 12px;
-  padding: 4px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 3px;
   margin-bottom: 12px;
 `;
 
 const TypeTab = styled.TouchableOpacity<{ active: boolean }>`
   padding: 6px 14px;
-  border-radius: 8px;
-  background-color: ${props => props.active ? '#FF7E47' : 'transparent'};
+  border-radius: 10px;
+  background-color: ${props => props.active ? 'rgba(255, 255, 255, 0.95)' : 'transparent'};
 `;
 
 const TypeTabText = styled.Text<{ active: boolean }>`
-  color: ${props => props.active ? '#08080A' : '#B8B0D0'};
+  color: ${props => props.active ? '#08080C' : '#8E8E93'};
   font-size: 11px;
-  font-weight: bold;
+  font-weight: 600;
 `;
 
 const ModeSelectorsHeader = styled.View`
   flex-direction: row;
-  background-color: #111116;
-  border-width: 1px;
-  border-color: #1E1E26;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  padding: 4px;
+  padding: 3px;
   margin-bottom: 10px;
 `;
 
@@ -997,18 +1184,17 @@ const ModeTab = styled.TouchableOpacity<{ active: boolean }>`
 `;
 
 const ModeTabText = styled.Text<{ active: boolean }>`
-  color: ${props => props.active ? '#FF7E47' : '#6B6280'};
+  color: ${props => props.active ? '#FF7E47' : '#8E8E93'};
   font-size: 10px;
   font-weight: bold;
 `;
 
-// Phase indicators (non-interactive) - replace the old ModeTab during active session
 const PhaseIndicator = styled.View<{ active: boolean }>`
   padding: 5px 16px;
   border-radius: 16px;
-  background-color: ${props => props.active ? 'rgba(255, 126, 71, 0.18)' : 'rgba(255,255,255,0.04)'};
-  border-width: 1.5px;
-  border-color: ${props => props.active ? 'rgba(255, 126, 71, 0.5)' : 'rgba(255,255,255,0.08)'};
+  background-color: ${props => props.active ? 'rgba(255, 126, 71, 0.12)' : 'rgba(255,255,255,0.02)'};
+  border-width: 0.8px;
+  border-color: ${props => props.active ? '#FF7E47' : 'rgba(255,255,255,0.06)'};
 `;
 
 const PhaseIndicatorText = styled.Text<{ active: boolean }>`
@@ -1041,12 +1227,13 @@ const TimerContentArea = styled.View`
 
 const SimpleTimerText = styled.Text`
   color: #FFFFFF;
-  font-size: 80px;
-  font-weight: 800;
+  font-size: 84px;
+  font-weight: 300;
   letter-spacing: -2px;
+  text-shadow-color: rgba(255, 255, 255, 0.1);
+  text-shadow-radius: 8px;
 `;
 
-// THREE-CARD FLIP CLOCK LAYOUT (Image 2)
 const ThreeCardRow = styled.View`
   flex-direction: row;
   align-items: center;
@@ -1067,9 +1254,9 @@ const GearGap = styled.View`
 `;
 
 const DateTimeText = styled.Text`
-  color: #B8B0D0;
+  color: #8E8E93;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   text-align: center;
   margin-bottom: 24px;
   letter-spacing: 1px;
@@ -1109,9 +1296,9 @@ const CardHalf = styled.View`
   width: 90px;
   height: 55px;
   overflow: hidden;
-  background-color: #121217;
-  border-width: 1.5px;
-  border-color: #1E1E26;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
 `;
 
 const CardHalfTop = styled(CardHalf)`
@@ -1145,9 +1332,9 @@ const AnimatedHalfBottom = Animated.createAnimatedComponent(styled(CardHalfBotto
 const DividerLine = styled.View`
   position: absolute;
   width: 100%;
-  height: 1.5px;
-  background-color: #08080A;
-  top: 54.25px;
+  height: 1px;
+  background-color: #08080C;
+  top: 54.5px;
   left: 0;
   z-index: 15;
 `;
@@ -1166,36 +1353,40 @@ const FlipNumberText = styled.Text`
 `;
 
 const CardBottomLabel = styled.Text`
-  color: #6B6280;
+  color: #8E8E93;
   font-size: 9px;
-  font-weight: bold;
+  font-weight: 600;
   letter-spacing: 1px;
   margin-top: 8px;
 `;
 
-// Gear Knob layout (Image 2)
 const GearDialKnob = styled.View`
   position: absolute;
   right: -14px;
-  top: 36px;
-  width: 7px;
-  height: 38px;
-  background-color: #25252D;
-  border-radius: 3px;
-  border-width: 1px;
-  border-color: #3C3C47;
-  padding-vertical: 2px;
+  top: 32px;
+  width: 13px;
+  height: 46px;
+  background-color: #1A1A22;
+  border-radius: 6px;
+  border-width: 1.5px;
+  border-color: rgba(255, 126, 71, 0.45);
+  padding-vertical: 4px;
   align-items: center;
+  justify-content: space-around;
   z-index: 20;
+  shadow-color: #FF7E47;
+  shadow-opacity: 0.25;
+  shadow-radius: 4px;
+  elevation: 3;
 `;
 
 const GearDialStripe = styled.View`
-  width: 4px;
-  height: 1.5px;
-  background-color: #555566;
+  width: 7px;
+  height: 2px;
+  background-color: #FF7E47;
+  border-radius: 1px;
 `;
 
-// Touch Regions for tapping up/down adjustments (Image 3)
 const InteractiveHalfTop = styled.TouchableOpacity`
   position: absolute;
   top: 0;
@@ -1229,10 +1420,10 @@ const CategoryScroll = styled.ScrollView`
 `;
 
 const CategoryPill = styled.TouchableOpacity<{ active: boolean }>`
-  background-color: ${props => props.active ? 'rgba(255, 126, 71, 0.12)' : 'rgba(17, 17, 22, 0.65)'};
-  border-width: 1px;
-  border-color: ${props => props.active ? '#FF7E47' : '#1E1E26'};
-  border-radius: 12px;
+  background-color: ${props => props.active ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.04)'};
+  border-width: 0.8px;
+  border-color: ${props => props.active ? 'transparent' : 'rgba(255, 255, 255, 0.08)'};
+  border-radius: 14px;
   padding: 6px 14px;
   margin-right: 8px;
   justify-content: center;
@@ -1241,9 +1432,9 @@ const CategoryPill = styled.TouchableOpacity<{ active: boolean }>`
 `;
 
 const CategoryPillText = styled.Text<{ active: boolean }>`
-  color: ${props => props.active ? '#FF7E47' : '#B8B0D0'};
+  color: ${props => props.active ? '#08080C' : '#E6E6FA'};
   font-size: 11px;
-  font-weight: bold;
+  font-weight: 600;
 `;
 
 const ThemeSelectionRow = styled.View`
@@ -1255,10 +1446,10 @@ const ThemeSelectionRow = styled.View`
 `;
 
 const ThemeButton = styled.TouchableOpacity<{ active: boolean }>`
-  background-color: ${props => props.active ? 'rgba(255, 126, 71, 0.12)' : 'rgba(17, 17, 22, 0.65)'};
-  border-width: 1px;
-  border-color: ${props => props.active ? '#FF7E47' : '#1E1E26'};
-  border-radius: 12px;
+  background-color: ${props => props.active ? 'rgba(255, 126, 71, 0.12)' : 'rgba(255, 255, 255, 0.04)'};
+  border-width: 0.8px;
+  border-color: ${props => props.active ? '#FF7E47' : 'rgba(255, 255, 255, 0.08)'};
+  border-radius: 14px;
   padding: 6px 14px;
   margin-horizontal: 4px;
   justify-content: center;
@@ -1268,19 +1459,18 @@ const ThemeButton = styled.TouchableOpacity<{ active: boolean }>`
 `;
 
 const ThemeButtonText = styled.Text<{ active: boolean }>`
-  color: ${props => props.active ? '#FF7E47' : '#B8B0D0'};
+  color: ${props => props.active ? '#FF7E47' : '#8E8E93'};
   font-size: 11px;
   font-weight: bold;
 `;
 
-// Small Setting icon pill (closes bottom drawer, opens inline dropdown)
 const SettingsIconPill = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  background-color: rgba(17, 17, 22, 0.65);
-  border-width: 1px;
-  border-color: #1E1E26;
-  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 6px 12px;
   margin-top: 8px;
   margin-bottom: 12px;
@@ -1294,29 +1484,28 @@ const SettingsIconText = styled.Text`
   margin-left: 6px;
 `;
 
-// Semi-transparent Dropdown Panel (closes on outside clicks)
 const BackdropPressable = styled.Pressable`
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(8, 8, 10, 0.2);
+  background-color: rgba(8, 8, 12, 0.6);
   justify-content: center;
   align-items: center;
   z-index: 500;
 `;
 
 const DropdownOverlayCard = styled.View`
-  background-color: rgba(20, 20, 25, 0.88);
-  border-radius: 20px;
-  border-width: 1.5px;
-  border-color: #1E1E26;
-  padding: 20px;
+  background-color: rgba(28, 28, 30, 0.96);
+  border-radius: 24px;
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.12);
+  padding: 24px;
   width: 90%;
   shadow-color: #000;
-  shadow-opacity: 0.6;
-  shadow-radius: 12px;
+  shadow-opacity: 0.4;
+  shadow-radius: 16px;
   elevation: 20;
 `;
 
@@ -1325,29 +1514,28 @@ const DropdownHeader = styled.View`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 18px;
-  border-bottom-width: 1px;
-  border-bottom-color: #1E1E26;
-  padding-bottom: 8px;
+  border-bottom-width: 0.8px;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
 `;
 
 const DropdownTitleText = styled.Text`
   color: #FFFFFF;
-  font-size: 14px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 `;
 
 const DonePillButton = styled.TouchableOpacity`
-  background-color: rgba(255, 126, 71, 0.12);
-  padding: 4px 10px;
-  border-radius: 8px;
-  border-width: 1px;
-  border-color: #FF7E47;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 6px 12px;
+  border-radius: 12px;
 `;
 
 const DonePillText = styled.Text`
-  color: #FF7E47;
-  font-size: 10px;
-  font-weight: 800;
+  color: #08080C;
+  font-size: 11px;
+  font-weight: bold;
 `;
 
 const ConfigSection = styled.View``;
@@ -1359,27 +1547,28 @@ const ConfigRow = styled.View`
 `;
 
 const ConfigLabelText = styled.Text`
-  color: #6B6280;
+  color: #8E8E93;
   font-size: 10px;
   font-weight: bold;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const StepperRow = styled.View`
   flex-direction: row;
   align-items: center;
-  background-color: #141419;
-  border-width: 1px;
-  border-color: #1E1E26;
-  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
   padding: 2px;
 `;
 
 const StepperButton = styled.TouchableOpacity`
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background-color: #1E1E26;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.06);
   justify-content: center;
   align-items: center;
 `;
@@ -1398,21 +1587,20 @@ const OptionSelectionRow = styled.View`
 `;
 
 const OptionBtn = styled.TouchableOpacity<{ active: boolean }>`
-  background-color: ${props => props.active ? 'rgba(255, 126, 71, 0.12)' : 'transparent'};
-  border-width: 1px;
-  border-color: ${props => props.active ? '#FF7E47' : '#1E1E26'};
-  border-radius: 6px;
-  padding: 4px 8px;
+  background-color: ${props => props.active ? '#FF7E47' : 'rgba(255, 255, 255, 0.04)'};
+  border-width: 0.8px;
+  border-color: ${props => props.active ? 'transparent' : 'rgba(255, 255, 255, 0.08)'};
+  border-radius: 8px;
+  padding: 5px 10px;
   margin-left: 6px;
 `;
 
 const OptionText = styled.Text<{ active: boolean }>`
-  color: ${props => props.active ? '#FF7E47' : '#B8B0D0'};
+  color: ${props => props.active ? '#08080C' : '#8E8E93'};
   font-size: 9px;
   font-weight: bold;
 `;
 
-// Controls
 const ControlsArea = styled.View`
   flex-direction: row;
   align-items: center;
@@ -1421,16 +1609,21 @@ const ControlsArea = styled.View`
 `;
 
 const StartButton = styled.TouchableOpacity`
-  background-color: #FF7E47;
-  padding: 14px 28px;
-  border-radius: 14px;
+  background-color: rgba(255, 126, 71, 0.22);
+  border-width: 1px;
+  border-color: #FF7E47;
+  padding: 13px 30px;
+  border-radius: 16px;
   flex-direction: row;
   justify-content: center;
   align-items: center;
+  shadow-color: #FF7E47;
+  shadow-opacity: 0.15;
+  shadow-radius: 6px;
 `;
 
 const StartButtonText = styled.Text`
-  color: #08080A;
+  color: #FF8E53;
   font-size: 14px;
   font-weight: bold;
   margin-left: 8px;
@@ -1439,29 +1632,28 @@ const StartButtonText = styled.Text`
 const ResetButton = styled.TouchableOpacity`
   width: 48px;
   height: 48px;
-  border-radius: 14px;
-  background-color: #111116;
-  border-width: 1px;
-  border-color: #1E1E26;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
   justify-content: center;
   align-items: center;
   margin-left: 12px;
 `;
 
-// Vertical Navigation Stack
 const VerticalNavStack = styled.View`
   position: absolute;
   right: 16px;
-  bottom: 160px;
-  background-color: rgba(17, 17, 22, 0.8);
-  border-width: 1px;
-  border-color: #1E1E26;
+  bottom: 120px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
   border-radius: 26px;
   padding: 6px;
   align-items: center;
   z-index: 1000;
   shadow-color: #000;
-  shadow-opacity: 0.4;
+  shadow-opacity: 0.3;
   shadow-radius: 12px;
   elevation: 10;
 `;
@@ -1476,7 +1668,6 @@ const NavCircleButton = styled.TouchableOpacity<{ active: boolean }>`
   margin-vertical: 4px;
 `;
 
-// Stats styling
 const StatsHeaderRow = styled.View`
   flex-direction: row;
   justify-content: space-between;
@@ -1487,12 +1678,15 @@ const StatsHeaderRow = styled.View`
 const StatsHeaderTitle = styled.Text`
   color: #FFFFFF;
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 500;
+  letter-spacing: 0.2px;
 `;
 
 const StatsFilterGroup = styled.View`
   flex-direction: row;
-  background-color: #111116;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   padding: 2px;
 `;
@@ -1504,9 +1698,9 @@ const FilterPill = styled.TouchableOpacity<{ active: boolean }>`
 `;
 
 const FilterPillText = styled.Text<{ active: boolean }>`
-  color: ${props => props.active ? '#08080A' : '#6B6280'};
+  color: ${props => props.active ? '#08080C' : '#8E8E93'};
   font-size: 10px;
-  font-weight: 800;
+  font-weight: bold;
 `;
 
 const StatsRowGrid = styled.View`
@@ -1516,13 +1710,17 @@ const StatsRowGrid = styled.View`
 
 const StatsMiniCard = styled(GlassCard)`
   width: 48%;
-  padding: 14px;
+  padding: 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
 `;
 
 const StatsValueLabel = styled.Text`
-  color: #6B6280;
-  font-size: 10px;
-  font-weight: 800;
+  color: #8E8E93;
+  font-size: 9px;
+  font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 `;
@@ -1530,15 +1728,15 @@ const StatsValueLabel = styled.Text`
 const StatsBigNumber = styled.Text`
   color: #FFFFFF;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: bold;
   margin-top: 4px;
 `;
 
 const StatsGroupCard = styled.View`
-  background-color: #111116;
-  border-width: 1px;
-  border-color: #1E1E26;
-  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
   padding: 16px;
 `;
 
@@ -1555,18 +1753,18 @@ const ProgressLabelInfo = styled.View`
 const ProgressText = styled.Text`
   color: #FFFFFF;
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 500;
 `;
 
 const ProgressVal = styled.Text`
-  color: #6B6280;
+  color: #8E8E93;
   font-size: 11px;
 `;
 
 const ProgressBarContainer = styled.View`
-  height: 6px;
-  border-radius: 3px;
-  background-color: #08080A;
+  height: 5px;
+  border-radius: 2.5px;
+  background-color: rgba(255, 255, 255, 0.04);
   width: 100%;
   overflow: hidden;
 `;
@@ -1575,7 +1773,7 @@ const ProgressBarFill = styled.View<{ percent: number; color: string }>`
   height: 100%;
   width: ${props => props.percent}%;
   background-color: ${props => props.color};
-  border-radius: 3px;
+  border-radius: 2.5px;
 `;
 
 const ProUpgradePill = styled.TouchableOpacity`
@@ -1594,7 +1792,6 @@ const ProButtonText = styled.Text`
   font-weight: bold;
 `;
 
-// Trend styling
 const SummaryTitleRow = styled.View`
   flex-direction: row;
   align-items: center;
@@ -1604,7 +1801,7 @@ const SummaryTitleRow = styled.View`
 const SummaryTitle = styled.Text`
   color: #FFFFFF;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: bold;
 `;
 
 const SummaryBadge = styled.View`
@@ -1623,7 +1820,7 @@ const SummaryBadgeText = styled.Text`
 `;
 
 const SummaryDateSub = styled.Text`
-  color: #6B6280;
+  color: #8E8E93;
   font-size: 12px;
   margin-bottom: 20px;
 `;
@@ -1635,7 +1832,7 @@ const FocusTrendSection = styled.View`
 const SectionSubtitle = styled.Text`
   color: #FFFFFF;
   font-size: 15px;
-  font-weight: bold;
+  font-weight: 500;
   margin-top: 24px;
   margin-bottom: 12px;
   margin-left: 2px;
@@ -1652,16 +1849,17 @@ const TrendStatBox = styled.View`
 `;
 
 const TrendStatLabel = styled.Text`
-  color: #6B6280;
-  font-size: 11px;
-  font-weight: 800;
+  color: #8E8E93;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const TrendStatVal = styled.Text`
   color: #FFFFFF;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: bold;
   margin-top: 2px;
 `;
 
@@ -1688,9 +1886,9 @@ const ChartBarColumn = styled.View`
 
 const ChartBarContainer = styled.View`
   height: 80px;
-  width: 14px;
-  border-radius: 7px;
-  background-color: #08080A;
+  width: 12px;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.04);
   justify-content: flex-end;
 `;
 
@@ -1698,12 +1896,29 @@ const ChartBarFill = styled.View<{ height: number }>`
   width: 100%;
   height: ${props => props.height}px;
   background-color: #FF7E47;
-  border-radius: 7px;
+  border-radius: 6px;
 `;
 
 const ChartBarLabel = styled.Text`
-  color: #6B6280;
+  color: #8E8E93;
   font-size: 10px;
   font-weight: bold;
   margin-top: 6px;
+`;
+
+const RightHeaderGroup = styled.View`
+  flex-direction: row;
+  align-items: center;
+`;
+
+const StatsCloseButton = styled.TouchableOpacity`
+  margin-left: 12px;
+  width: 30px;
+  height: 30px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-width: 0.8px;
+  border-color: rgba(255, 255, 255, 0.08);
 `;

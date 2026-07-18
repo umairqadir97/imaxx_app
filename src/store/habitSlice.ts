@@ -18,6 +18,7 @@ export interface Habit {
   streakGoal: string;        // e.g. "None", "5 days"
   category: string;        // e.g. "None", "Health"
   trackingType: 'step' | 'custom';
+  isTask?: boolean;
 }
 
 export interface CoworkingRoom {
@@ -36,6 +37,8 @@ export interface HabitState {
   coworkingRooms: CoworkingRoom[];
   listeningTimeTotal: number; // in seconds
   focusScoreTotal: number; // accumulated focus points
+  viewMode: 'grid' | 'list' | 'compact';
+  habitsSubTab: 'tasks' | 'micro';
 }
 
 const defaultHabits: Habit[] = [
@@ -60,6 +63,7 @@ const defaultHabits: Habit[] = [
     streakGoal: 'None',
     category: 'Health',
     trackingType: 'step',
+    isTask: false,
   },
   {
     id: 'habit_2',
@@ -80,11 +84,111 @@ const defaultHabits: Habit[] = [
     streakGoal: 'None',
     category: 'Mind',
     trackingType: 'step',
+    isTask: false,
   },
   {
     id: 'habit_3',
-    name: 'Focus Deep Work',
+    name: 'Get out of bed',
     color: '#FFB347',
+    icon: 'moon',
+    smallestUnit: 'Sit up and stretch',
+    description: 'Break morning sleep inertia',
+    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    completions: [
+      new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      new Date().toISOString().split('T')[0],
+    ],
+    streakCount: 3,
+    maxStreak: 3,
+    completionsPerDay: 1,
+    reminder: 'None',
+    streakGoal: 'None',
+    category: 'Health',
+    trackingType: 'step',
+    isTask: true,
+  },
+  {
+    id: 'habit_4',
+    name: 'Wash my face',
+    color: '#FF6B6B',
+    icon: 'droplets',
+    smallestUnit: 'Splash cold water',
+    description: 'Instant nervous system reset',
+    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    completions: [
+      new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      new Date().toISOString().split('T')[0],
+    ],
+    streakCount: 2,
+    maxStreak: 2,
+    completionsPerDay: 1,
+    reminder: 'None',
+    streakGoal: 'None',
+    category: 'Health',
+    trackingType: 'step',
+    isTask: true,
+  },
+  {
+    id: 'habit_5',
+    name: 'Brush teeth',
+    color: '#33A3FF',
+    icon: 'star',
+    smallestUnit: 'Brush for 2 minutes',
+    description: 'Maintain dental hygiene',
+    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    completions: [
+      new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    ],
+    streakCount: 0,
+    maxStreak: 1,
+    completionsPerDay: 1,
+    reminder: 'None',
+    streakGoal: 'None',
+    category: 'Health',
+    trackingType: 'step',
+    isTask: true,
+  },
+  {
+    id: 'habit_6',
+    name: 'Take 3 deep breaths',
+    color: '#38EF7D',
+    icon: 'wind',
+    smallestUnit: 'Box breathing reset',
+    description: 'Quiet the racing mind',
+    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    completions: [],
+    streakCount: 0,
+    maxStreak: 0,
+    completionsPerDay: 1,
+    reminder: 'None',
+    streakGoal: 'None',
+    category: 'Mind',
+    trackingType: 'step',
+    isTask: true,
+  },
+  {
+    id: 'habit_7',
+    name: 'Do one happy thing',
+    color: '#FF7EB9',
+    icon: 'heart',
+    smallestUnit: 'Listen to a song or stretch',
+    description: 'Prioritize self-care dopamine',
+    createdDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    completions: [],
+    streakCount: 0,
+    maxStreak: 0,
+    completionsPerDay: 1,
+    reminder: 'None',
+    streakGoal: 'None',
+    category: 'Mind',
+    trackingType: 'step',
+    isTask: true,
+  },
+  {
+    id: 'habit_8',
+    name: 'Focus Deep Work',
+    color: '#C4A8F5',
     icon: 'cpu',
     smallestUnit: 'Open doc & write 1 sentence',
     description: 'Overcome project starting paralysis',
@@ -97,6 +201,7 @@ const defaultHabits: Habit[] = [
     streakGoal: 'None',
     category: 'Work',
     trackingType: 'step',
+    isTask: false,
   },
 ];
 
@@ -114,6 +219,8 @@ const initialState: HabitState = {
   coworkingRooms: defaultRooms,
   listeningTimeTotal: 12450, // mock base seconds (~3.5 hrs)
   focusScoreTotal: 78,
+  viewMode: 'compact',
+  habitsSubTab: 'tasks',
 };
 
 // Helper function to calculate streaks based on completions array
@@ -169,7 +276,7 @@ const habitSlice = createSlice({
       };
     },
     editHabit: (state, action: PayloadAction<Omit<Habit, 'createdDate' | 'completions' | 'streakCount' | 'maxStreak'>>) => {
-      const { id, name, color, icon, smallestUnit, description, completionsPerDay, reminder, streakGoal, category, trackingType } = action.payload;
+      const { id, name, color, icon, smallestUnit, description, completionsPerDay, reminder, streakGoal, category, trackingType, isTask } = action.payload;
       const index = state.habits.findIndex(h => h.id === id);
       if (index > -1) {
         state.habits[index] = {
@@ -183,7 +290,8 @@ const habitSlice = createSlice({
           reminder,
           streakGoal,
           category,
-          trackingType
+          trackingType,
+          isTask
         };
       }
     },
@@ -241,6 +349,12 @@ const habitSlice = createSlice({
         room.participants = Math.max(5, room.participants + delta);
       });
     },
+    setViewMode: (state, action: PayloadAction<'grid' | 'list' | 'compact'>) => {
+      state.viewMode = action.payload;
+    },
+    setHabitsSubTab: (state, action: PayloadAction<'tasks' | 'micro'>) => {
+      state.habitsSubTab = action.payload;
+    },
   },
 });
 
@@ -256,6 +370,8 @@ export const {
   resetOnboarding,
   addListeningTime,
   updateCoworkingRoomParticipants,
+  setViewMode,
+  setHabitsSubTab,
 } = habitSlice.actions;
 
 export default habitSlice.reducer;

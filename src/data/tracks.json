@@ -1,0 +1,125 @@
+[
+  {
+    "id": "focus",
+    "name": "Focus",
+    "title": "COSTA RICA CANOPY",
+    "slogan": "Costa Rica Forest",
+    "category": "focus",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/focus-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=800"
+  },
+  {
+    "id": "relax",
+    "name": "Relax",
+    "title": "DAWN AT SKÓGAFOSS",
+    "slogan": "Iceland Waterfall",
+    "category": "relax",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/relax-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?q=80&w=800"
+  },
+  {
+    "id": "sleep",
+    "name": "Sleep",
+    "title": "DEEP NEBULA",
+    "slogan": "Cosmic Outer Space",
+    "category": "sleep",
+    "source": "s3",
+    "url": "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/gamma-waves/40Hz-Gamma-Waves-for-Extreme%20Focus.mp3?response-content-disposition=inline&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEEkaCXVzLWVhc3QtMSJGMEQCID4h3MWA4yZYnBX7qtvrY%2FegES%2FNm2AZuLQiN7aornNtAiBA%2B0ZamUz5rmw7Sa3T2TdetlOC2Xg2q%2BVg9OiW0yjgYCq5AwgSEAAaDDMxNDY5NDU5MDA2NyIM1xHhEToigfgD9vhKKpYD2aRPN05HVOojNVFeeNaAcO%2BwDibF72PmxuEqBKdhvpoN0vTi2Pz%2F7uEOJ0EY0u6%2BozhJRfUhVDcjtyfz32dGz%2FZp669GVbyQT557y1Jn9qF0wZ9n6Gho2t%2FbCBpShj4FgCpTzMXUIJVnlBs1SoXAU34BKIffCHzDu4jVGXzrPEVrhYiVRynx0Ku7MDSZAXfzjYB5YZsCFpg2oavXja766uGn09koIiGb9eGJM1cfKnXBIJh%2BnSO9OF3QuGTeKdxiruS6aHuBFdx2KCFnaEUSeYUyVV807tqHAR2CSu%2ByOm0jE%2BDMhhm55QzsTqkkb8KhkR4ZWbVhQeP3P5u5RHf47%2FK6cgLdc0c0MdaD6KlwoxH5BBthcCcE%2Bi1rcxlh1n38grckiWsU%2FXo9xRn1u3lAZI2E%2BcWzhHNqVyaN6W8grkoa6hXaOhJLKI06%2BvNgstRswIjJc5J4WjUiaPXRw8%2BXaiRMriqXqTEurwLYpnwHQHm399ESJzAQ38K3IZzPvk0NkTl6%2FP1CSPKmqyh2Jfw43HyKs7aLZzDU5tbSBjrfArf3zk85p2v10Ty7Pe84RCLS40kIV9lfSjY1JNek8icCAjzJd2pJxsfVslkc2GUqB8agrAHbx7TdLd5yKJ4urVUV5iKUp3yvJGogKlvCjL76pKov3uPM3F5XGGoaArchEJlnsp%2FHlo9s6SxUSlplLrLbllT18xNP0%2B9tWCPpGE0aaC5K5kyXDm9CUljXQHYHo%2Fl%2BZroIs2zZLIBcTdYePSjOwHsL8hTQMpB0616xujf6TLYzhUimGatLe%2FfEgxMIDTqs27zjt6UO08%2BarKbBZLpK3I9a51ILLTNx%2BVcvlkYCUgAZgO1UrAZIK1ZZ6iR%2FBFUv%2BUva63VsdOhL1PvhTZ1WOFzOLLMt%2BJJfhHJMalNY4KGQfqPejOuuJUWoc1%2FuOmBtXfPp32k4ertSfqGHjVvNoG51gFzr9KUkhXyoifS2wMLp0ERW%2BkCp8bAYe3RODb%2BLdItJc5mv8iNf7aC3Og%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAUSRKCLZZZUJUYSFU%2F20260714%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260714T082544Z&X-Amz-Expires=43200&X-Amz-SignedHeaders=host&X-Amz-Signature=c3f158f7891786a156949c1b3366aa83d397a8b65afb531cd1a3d79f08a2d348",
+    "staticImage": "https://images.unsplash.com/photo-1464802686167-b939a6910659?q=80&w=800"
+  },
+  {
+    "id": "move",
+    "name": "Move",
+    "title": "Youtube Ad Video Test",
+    "slogan": "Norway Fjords",
+    "category": "relax",
+    "source": "youtube",
+    "url": "https://www.youtube.com/watch?v=4lo81zt7HK8",
+    "local_1_minute_audio": "/Users/umair/dev/mobile-apps/Dopamind/src/data/40Hz-Gamma-Waves-for-Extreme Focus.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800"
+  },
+  {
+    "id": "uplift",
+    "name": "Uplift",
+    "title": "GOLDEN TUNDRA GLOW",
+    "slogan": "Norway Fjords",
+    "category": "relax",
+    "source": "youtube",
+    "url": "https://www.youtube.com/watch?v=ubNfkpbxXUs",
+    "local_1_minute_audio": "/Users/umair/dev/mobile-apps/Dopamind/src/data/40Hz-Gamma-Waves-for-Extreme Focus.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=800"
+  },
+  {
+    "id": "rain_2",
+    "name": "Rainforest Shower",
+    "title": "RAINFOREST SHOWER",
+    "slogan": "Amazon Jungle",
+    "category": "relax",
+    "source": "youtube",
+    "url": "https://www.youtube.com/watch?v=ubNfkpbxXUs",
+    "local_1_minute_audio": "/Users/umair/dev/mobile-apps/Dopamind/src/data/40Hz-Gamma-Waves-for-Extreme Focus.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800"
+  },
+  {
+    "id": "focus_1",
+    "name": "ADHD Deep Flow",
+    "title": "ADHD DEEP FLOW",
+    "slogan": "Attention Circadian Stimulator",
+    "category": "focus",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/focus_1-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800"
+  },
+  {
+    "id": "focus_2",
+    "name": "Gamma Concentration",
+    "title": "GAMMA CONCENTRATION",
+    "slogan": "Focus Frequencies Tuning",
+    "category": "focus",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/focus_2-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800"
+  },
+  {
+    "id": "sleep_1",
+    "name": "Theta Dreamscape",
+    "title": "THETA DREAMSCAPE",
+    "slogan": "Slowwave Sleep Sync",
+    "category": "sleep",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/sleep_1-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1511289081367-4a09c629c5e6?q=80&w=800"
+  },
+  {
+    "id": "nature_1",
+    "name": "Forest Wind Whispers",
+    "title": "FOREST WIND",
+    "slogan": "Deep Nature Whispering",
+    "category": "relax",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/nature_1-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1448375240586-882707db888b?q=80&w=800"
+  },
+  {
+    "id": "rain_1",
+    "name": "Cozy Attic Storm",
+    "title": "COZY ATTIC STORM",
+    "slogan": "Raindrops on Shingles",
+    "category": "relax",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/rain_1-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?q=80&w=800"
+  },
+  {
+    "id": "relax_1",
+    "name": "Zen Temple Bowl",
+    "title": "ZEN TEMPLE BOWL",
+    "slogan": "Harmonic Resonator",
+    "category": "relax",
+    "source": "cdn",
+    "url": "https://cdn.dopamind.app/audio/tracks/relax_1-v1.mp3",
+    "staticImage": "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?q=80&w=800"
+  }
+]

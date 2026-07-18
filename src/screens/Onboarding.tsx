@@ -36,7 +36,7 @@ export const Onboarding: React.FC = () => {
               <Compass size={60} color="#9B7EDE" />
             </LogoIcon>
           </LogoGlow>
-          <Title>DOPAMIND</Title>
+          <Title>iMaxx</Title>
           <Subtitle>Your brain works differently. Let's build focus and calm together.</Subtitle>
           <BeginButton onPress={handleNext}>
             <ButtonText>Get Started</ButtonText>
@@ -87,7 +87,7 @@ export const Onboarding: React.FC = () => {
     <Container>
       <StepIndicator>Step 3 of 3</StepIndicator>
       <Header>Grant permissions for real-time tuning</Header>
-      <Description>Dopamind adjusts its ambient engine dynamically based on context.</Description>
+      <Description>iMaxx adjusts its ambient engine dynamically based on context.</Description>
 
       <PermissionsList>
         <PermissionRow>
@@ -124,7 +124,7 @@ export const Onboarding: React.FC = () => {
       <ActionContainer>
         <ActivateButton onPress={handleNext}>
           <Sparkles size={18} color="#0D0B1A" style={{ marginRight: 8 }} />
-          <ButtonText>Activate Dopamind</ButtonText>
+          <ButtonText>Activate iMaxx</ButtonText>
         </ActivateButton>
       </ActionContainer>
     </Container>

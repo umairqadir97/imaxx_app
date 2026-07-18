@@ -1,0 +1,3151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMaxx SlowMaxxing — Premium Gamified Interactive Redesign</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #121016;
+      --bg-card: #1c1924;
+      --bg-card-hover: #252230;
+      --border: rgba(255, 255, 255, 0.05);
+      --border-glow: rgba(255, 255, 255, 0.12);
+      --text: #ffffff;
+      --text-sub: #9e97b0;
+      --text-dim: #544f66;
+
+      /* Finch Cozy Colors */
+      --orange: #ff9e79;
+      --orange-glow: rgba(255, 158, 121, 0.25);
+      --purple: #b39ddb;
+      --purple-glow: rgba(179, 157, 219, 0.25);
+      --cyan: #80deea;
+      --cyan-glow: rgba(128, 222, 234, 0.25);
+      --green: #80cbc4;
+      --green-glow: rgba(128, 203, 196, 0.25);
+      --pink: #ff8fb1;
+      --yellow: #ffe082;
+      --red: #ef5350;
+
+      /* Scenery Sky Gradients */
+      --sky-day: linear-gradient(180deg, #a5d6a7 0%, #e8f5e9 100%);
+      --sky-sunset: linear-gradient(180deg, #ffab91 0%, #ffe082 100%);
+      --sky-night: linear-gradient(180deg, #1a1829 0%, #392e5c 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Background particles */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      animation: float-particle linear infinite;
+      opacity: 0;
+    }
+
+    @keyframes float-particle {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 1;
+      }
+
+      90% {
+        opacity: 1;
+      }
+
+      100% {
+        transform: translateY(-10vh) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* ══════════════════════════════════════ */
+    /* HERO HEADER                           */
+    /* ══════════════════════════════════════ */
+    .hero {
+      text-align: center;
+      padding: 40px 20px 15px;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 100px;
+      background: rgba(179, 157, 219, 0.08);
+      border: 1px solid rgba(179, 157, 219, 0.2);
+      font-size: 0.8rem;
+      color: var(--purple);
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--pink) 30%, var(--purple) 60%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+
+    .hero-sub {
+      color: var(--text-sub);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* MAIN TWO-COLUMN LAYOUT                */
+    /* ══════════════════════════════════════ */
+    .main-layout {
+      display: flex;
+      justify-content: center;
+      gap: 45px;
+      padding: 10px 20px 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .phone-col {
+      flex-shrink: 0;
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .info-col {
+      flex: 1;
+      max-width: 520px;
+      padding-top: 10px;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* PHONE FRAME                           */
+    /* ══════════════════════════════════════ */
+    .phone-frame {
+      width: 375px;
+      height: 812px;
+      background: #0d0b11;
+      border: 11px solid #282533;
+      border-radius: 48px;
+      box-shadow:
+        0 30px 60px -15px rgba(0, 0, 0, 0.95),
+        0 0 50px rgba(179, 157, 219, 0.1),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phone-island {
+      width: 120px;
+      height: 28px;
+      background: #000;
+      border-radius: 0 0 16px 16px;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 150;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Fixed Top Header within phone screen */
+    .phone-top-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      padding: 16px 16px 0;
+      background: var(--bg-dark);
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .phone-screen {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: var(--bg-dark);
+      display: flex;
+      flex-direction: column;
+      padding-top: 48px;
+      /* Fixed header offset */
+      padding-bottom: 72px;
+      /* bottom nav spacing */
+    }
+
+    /* ══════════════════════════════════════ */
+    /* SCREEN ROUTING                        */
+    /* ══════════════════════════════════════ */
+    .screen {
+      position: absolute;
+      inset: 48px 0 72px 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: scale(0.97);
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 12px 14px 20px;
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+      z-index: 10;
+    }
+
+    .screen::-webkit-scrollbar {
+      width: 0;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* BOTTOM NAVIGATION                     */
+    /* ══════════════════════════════════════ */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      background: linear-gradient(180deg, rgba(18, 16, 22, 0) 0%, rgba(18, 16, 22, 0.96) 25%, #121016 100%);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px 10px;
+      z-index: 90;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .nav-icon {
+      font-size: 1.25rem;
+      color: var(--text-dim);
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    .nav-label {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+
+    .nav-item.active .nav-icon {
+      color: var(--orange);
+      transform: translateY(-1px);
+    }
+
+    .nav-item.active .nav-label {
+      color: var(--orange);
+    }
+
+    /* Sleep active styling */
+    .nav-item.active[onclick*="sleep"] .nav-icon {
+      color: var(--purple);
+    }
+
+    .nav-item.active[onclick*="sleep"] .nav-label {
+      color: var(--purple);
+    }
+
+    /* Timer active styling */
+    .nav-item.active[onclick*="timer"] .nav-icon {
+      color: var(--cyan);
+    }
+
+    .nav-item.active[onclick*="timer"] .nav-label {
+      color: var(--cyan);
+    }
+
+    /* Habits active styling */
+    .nav-item.active[onclick*="habits"] .nav-icon {
+      color: var(--green);
+    }
+
+    .nav-item.active[onclick*="habits"] .nav-label {
+      color: var(--green);
+    }
+
+    /* Center SlowMaxx Button */
+    .nav-center {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), var(--pink));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px var(--orange-glow);
+      transition: all 0.25s ease;
+      animation: breathe 3s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px var(--orange-glow);
+      }
+
+      50% {
+        transform: scale(1.06);
+        box-shadow: 0 4px 25px rgba(255, 158, 121, 0.4);
+      }
+    }
+
+    .nav-center:hover {
+      transform: scale(1.1);
+    }
+
+    .nav-center .nav-icon {
+      color: #fff;
+      font-size: 1.4rem;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* MASTER SVG MASCOT (CORTI THE BRAIN)   */
+    /* ══════════════════════════════════════ */
+    .corti-mascot-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .corti-mascot-wrapper:hover {
+      transform: scale(1.05);
+    }
+
+    .corti-svg-element {
+      width: 90px;
+      height: 90px;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
+    }
+
+    /* Mascot Animations */
+    .corti-float-anim {
+      animation: float-mascot 3.5s ease-in-out infinite;
+    }
+
+    @keyframes float-mascot {
+
+      0%,
+      100% {
+        transform: translateY(0px) rotate(-1deg);
+      }
+
+      50% {
+        transform: translateY(-5px) rotate(1deg);
+      }
+    }
+
+    /* Dynamic Expression Parts */
+    .corti-eyes-happy,
+    .corti-eyes-sleepy,
+    .corti-eyes-foggy,
+    .corti-eyes-focus,
+    .corti-mouth-smile,
+    .corti-mouth-sleepy,
+    .corti-mouth-open,
+    .corti-effect-fog,
+    .corti-effect-confetti,
+    .corti-gear-glasses,
+    .corti-gear-cap,
+    .corti-acc-headphones,
+    .corti-acc-crown,
+    .corti-acc-sunglasses,
+    .corti-acc-scarf {
+      display: none;
+    }
+
+    /* Happy state default */
+    .state-happy .corti-eyes-happy {
+      display: block;
+    }
+
+    .state-happy .corti-mouth-smile {
+      display: block;
+    }
+
+    /* Focus state */
+    .state-focus .corti-eyes-focus {
+      display: block;
+    }
+
+    .state-focus .corti-mouth-smile {
+      display: block;
+    }
+
+    .state-focus .corti-gear-glasses {
+      display: block;
+    }
+
+    .state-focus .corti-cloud-body {
+      fill: #fff4ed;
+    }
+
+    .state-focus .corti-glow-layer {
+      filter: drop-shadow(0 0 10px var(--orange-glow));
+    }
+
+    /* Sleepy state */
+    .state-sleepy .corti-eyes-sleepy {
+      display: block;
+    }
+
+    .state-sleepy .corti-mouth-sleepy {
+      display: block;
+    }
+
+    .state-sleepy .corti-gear-cap {
+      display: block;
+    }
+
+    .state-sleepy .corti-cloud-body {
+      fill: #f3efff;
+    }
+
+    .state-sleepy .corti-glow-layer {
+      filter: drop-shadow(0 0 10px var(--purple-glow));
+    }
+
+    /* Foggy state */
+    .state-foggy .corti-eyes-foggy {
+      display: block;
+    }
+
+    .state-foggy .corti-mouth-sleepy {
+      display: block;
+    }
+
+    .state-foggy .corti-effect-fog {
+      display: block;
+    }
+
+    .state-foggy .corti-cloud-body {
+      fill: #eaeaeF;
+    }
+
+    /* Celebrating state */
+    .state-celebrating .corti-eyes-happy {
+      display: block;
+    }
+
+    .state-celebrating .corti-mouth-open {
+      display: block;
+    }
+
+    .state-celebrating .corti-effect-confetti {
+      display: block;
+    }
+
+    .state-celebrating .corti-cloud-body {
+      fill: #e8faf8;
+    }
+
+    .state-celebrating .corti-glow-layer {
+      filter: drop-shadow(0 0 10px var(--green-glow));
+    }
+
+    /* Mascot Speech Bubble */
+    .mascot-bubble {
+      position: absolute;
+      top: -38px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 18, 24, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.25s, top 0.25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .mascot-bubble.active {
+      opacity: 1;
+      top: -46px;
+    }
+
+    .mascot-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid rgba(18, 18, 24, 0.95);
+    }
+
+    /* Typing hands animation for co-working timer */
+    .typing-desk {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      margin-top: 10px;
+    }
+
+    .laptop-svg {
+      width: 60px;
+      height: 40px;
+      margin-top: -15px;
+      z-index: 20;
+    }
+
+    .corti-hands {
+      position: absolute;
+      bottom: 26px;
+      display: flex;
+      gap: 32px;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .typing .corti-hands {
+      opacity: 1;
+    }
+
+    .corti-hand {
+      width: 10px;
+      height: 10px;
+      background: #c4b5fd;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .typing .hand-l {
+      animation: type-hand 0.18s infinite alternate;
+    }
+
+    .typing .hand-r {
+      animation: type-hand 0.22s infinite alternate-reverse;
+    }
+
+    @keyframes type-hand {
+      0% {
+        transform: translateY(0);
+      }
+
+      100% {
+        transform: translateY(-4px) scale(1.1);
+      }
+    }
+
+    /* ══════════════════════════════════════ */
+    /* COZY FINCH UI ELEMENTS                */
+    /* ══════════════════════════════════════ */
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .glass-card:hover {
+      border-color: var(--border-glow);
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .screen-title-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .xp-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--yellow);
+      background: rgba(255, 224, 130, 0.08);
+      border: 1px solid rgba(255, 224, 130, 0.25);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+
+    .section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      padding: 8px 4px 6px;
+    }
+
+    /* Progress bar */
+    .progress-track {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 100px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--orange), var(--pink));
+      border-radius: 100px;
+      transition: width 0.4s ease;
+    }
+
+    /* Stat Indicator counters */
+    .sparks-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--yellow);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* SCREEN 1: HOME PAGE (FINCH ADVENTURE)  */
+    /* ══════════════════════════════════════ */
+    .home-avatar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .home-user-greeting {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    .home-user-name {
+      font-family: 'Space Grotesk';
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    /* Finch Scenic Room/Meadow */
+    .mascot-stage {
+      height: 190px;
+      background: var(--sky-sunset);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 12px;
+      transition: background 0.6s ease;
+    }
+
+    .stage-stars {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(white 1px, transparent 0);
+      background-size: 32px 32px;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+
+    /* Rolling hills SVGs for Finch style scenery */
+    .stage-hills {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 45px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .stage-hills svg {
+      width: 100%;
+      height: 100%;
+      vertical-align: bottom;
+    }
+
+    .stage-hill-1 {
+      fill: #81c784;
+      opacity: 0.8;
+    }
+
+    .stage-hill-2 {
+      fill: #66bb6a;
+    }
+
+    /* Sunset & Night Stage states */
+    .mascot-stage.night {
+      background: var(--sky-night);
+    }
+
+    .mascot-stage.night .stage-stars {
+      opacity: 0.4;
+    }
+
+    .mascot-stage.night .stage-hill-1 {
+      fill: #1b4d3e;
+    }
+
+    .mascot-stage.night .stage-hill-2 {
+      fill: #123d30;
+    }
+
+    /* Dynamic Clouds */
+    .stage-clouds {
+      position: absolute;
+      top: 15px;
+      width: 100%;
+      height: 50px;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .cloud-unit {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: float-cloud 20s linear infinite;
+    }
+
+    .c1 {
+      left: -10%;
+      animation-duration: 25s;
+    }
+
+    .c2 {
+      left: 40%;
+      animation-duration: 18s;
+      animation-delay: -5s;
+    }
+
+    @keyframes float-cloud {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(380px);
+      }
+    }
+
+    .mascot-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      z-index: 10;
+    }
+
+    .mascot-btn {
+      background: #2b263b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.25s;
+    }
+
+    .mascot-btn:hover {
+      background: #39324d;
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .feed-menu {
+      position: absolute;
+      bottom: 44px;
+      background: #171520;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 120;
+    }
+
+    .feed-option {
+      padding: 9px 14px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .feed-option:hover {
+      background: rgba(255, 158, 121, 0.12);
+      color: var(--orange);
+    }
+
+    /* Adventure widget modeled after Finch's quests */
+    .adventure-card {
+      background: linear-gradient(135deg, rgba(255, 158, 121, 0.12) 0%, rgba(255, 143, 177, 0.06) 100%);
+      border: 1px solid rgba(255, 158, 121, 0.2);
+    }
+
+    .adventure-btn {
+      background: linear-gradient(135deg, var(--orange), var(--pink));
+      border: none;
+      color: #000;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 8px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .adventure-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    /* ══════════════════════════════════════ */
+    /* SCREEN 2: SLOWMAXX / GENERATIVE AUDIO  */
+    /* ══════════════════════════════════════ */
+    .breathe-circle-wrap {
+      height: 125px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .breathe-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(128, 222, 234, 0.25) 0%, rgba(179, 157, 219, 0.1) 70%);
+      border: 1.5px solid rgba(128, 222, 234, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #fff;
+      transition: transform 4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .breathe-expand {
+      transform: scale(1.6);
+      background: radial-gradient(circle, rgba(128, 222, 234, 0.45) 0%, rgba(179, 157, 219, 0.2) 70%);
+      border-color: rgba(128, 222, 234, 0.7);
+    }
+
+    /* Soundscape sliders */
+    .mixer-sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mixer-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mixer-label {
+      width: 85px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-sub);
+    }
+
+    .mixer-input {
+      flex: 1;
+      accent-color: var(--cyan);
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .visualizer-canvas {
+      width: 100%;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+      margin-top: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    /* ══════════════════════════════════════ */
+    /* SCREEN 3: FOCUS TIMER                 */
+    /* ══════════════════════════════════════ */
+    .focus-ring-container {
+      display: flex;
+      justify-content: center;
+      padding: 12px 0;
+      position: relative;
+    }
+
+    .focus-ring {
+      width: 180px;
+      height: 180px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .focus-ring svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.04);
+      stroke-width: 8;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: url(#focusTimerGrad);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 502;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear;
+    }
+
+    .timer-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: -1.5px;
+    }
+
+    .timer-lbl {
+      font-size: 0.65rem;
+      color: var(--text-sub);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: -4px;
+    }
+
+    .timer-btns {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .timer-btn-primary {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--orange), #f4511e);
+      border: none;
+      color: #fff;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px var(--orange-glow);
+      transition: transform 0.2s;
+    }
+
+    .timer-btn-primary:hover {
+      transform: scale(1.08);
+    }
+
+    .timer-btn-sub {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--text-sub);
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .timer-btn-sub:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* ══════════════════════════════════════ */
+    /* SCREEN 4: SLEEP & ALARM               */
+    /* ══════════════════════════════════════ */
+    .checklist-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .check-item.done {
+      border-color: rgba(179, 157, 219, 0.3);
+      background: rgba(179, 157, 219, 0.05);
+    }
+
+    .check-box {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+
+    .check-item.done .check-box {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: #121016;
+    }
+
+    .alarm-setting-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .alarm-time-picker {
+      background: none;
+      border: none;
+      color: #fff;
+      font-family: 'Space Grotesk';
+      font-size: 1.6rem;
+      font-weight: 700;
+      outline: none;
+      width: 95px;
+      cursor: pointer;
+    }
+
+    .alarm-select {
+      background: #191722;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-sub);
+      font-size: 0.7rem;
+      padding: 6px 10px;
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* SCREEN 5: HABIT GARDEN                */
+    /* ══════════════════════════════════════ */
+    .garden-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .garden-plot {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 20px;
+      padding: 14px;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+
+    .garden-plot:hover {
+      border-color: rgba(128, 203, 196, 0.3);
+      background: rgba(128, 203, 196, 0.02);
+    }
+
+    .garden-plot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .plot-plant-visual {
+      font-size: 2rem;
+      margin: 12px 0;
+      text-align: center;
+      transition: transform 0.3s;
+    }
+
+    .garden-plot:active .plot-plant-visual {
+      transform: scale(1.18);
+    }
+
+    .plot-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .plot-streak {
+      font-size: 0.6rem;
+      color: var(--text-sub);
+    }
+
+    .plot-status-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: bold;
+    }
+
+    .garden-plot.watered {
+      background: rgba(128, 203, 196, 0.06);
+      border-color: rgba(128, 203, 196, 0.3);
+    }
+
+    .garden-plot.watered .plot-status-dot {
+      background: var(--green);
+      border-color: var(--green);
+      color: #121016;
+    }
+
+    /* Watering Can Floating Animation */
+    .watering-can-fx {
+      position: absolute;
+      top: -24px;
+      right: -24px;
+      font-size: 2rem;
+      transform: rotate(0deg);
+      opacity: 0;
+      transition: all 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+    }
+
+    .watering-can-fx.pour {
+      opacity: 1;
+      top: 15px;
+      right: 15px;
+      transform: rotate(-35deg);
+    }
+
+    /* Custom to-dos list */
+    .todo-list-wrap {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 20px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .todo-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .todo-input {
+      flex: 1;
+      background: #181520;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 7px 12px;
+      color: #fff;
+      font-size: 0.75rem;
+      outline: none;
+    }
+
+    .todo-input:focus {
+      border-color: var(--green);
+    }
+
+    .todo-add-btn {
+      background: var(--green);
+      border: none;
+      color: #121016;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 0 14px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .todo-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      background: rgba(255, 255, 255, 0.01);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    .todo-item-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+
+    .todo-item.completed {
+      opacity: 0.65;
+      text-decoration: line-through;
+    }
+
+    .todo-delete {
+      color: var(--red);
+      font-size: 0.75rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* Sleepy FULL SCREEN OVERLAY SIMULATOR  */
+    /* ══════════════════════════════════════ */
+    .alarm-simulation-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(18, 16, 22, 0.99);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      animation: alert-flash 1s infinite alternate;
+    }
+
+    @keyframes alert-flash {
+      0% {
+        box-shadow: inset 0 0 20px rgba(179, 157, 219, 0.2);
+      }
+
+      100% {
+        box-shadow: inset 0 0 40px rgba(255, 143, 177, 0.3);
+      }
+    }
+
+    .alarm-alert-icon {
+      font-size: 3.2rem;
+      animation: wobble 0.5s infinite alternate;
+    }
+
+    @keyframes wobble {
+      0% {
+        transform: rotate(-8deg);
+      }
+
+      100% {
+        transform: rotate(8deg);
+      }
+    }
+
+    .challenge-card {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 18px;
+      margin-top: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .challenge-title {
+      font-family: 'Space Grotesk';
+      font-size: 0.95rem;
+      color: var(--pink);
+      margin-bottom: 8px;
+    }
+
+    .challenge-math-question {
+      font-family: 'Space Grotesk';
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 12px 0;
+    }
+
+    .challenge-math-input {
+      width: 90px;
+      background: #181520;
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      font-size: 1.3rem;
+      text-align: center;
+      padding: 6px;
+      border-radius: 10px;
+      outline: none;
+    }
+
+    .challenge-math-input:focus {
+      border-color: var(--pink);
+    }
+
+    .shake-progress-bar {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 5px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+
+    .shake-progress-fill {
+      height: 100%;
+      background: var(--pink);
+      width: 0%;
+      transition: width 0.15s ease;
+    }
+
+    /* ══════════════════════════════════════ */
+    /* DOPAMINE SHOP ACCESSORIES CATALOG     */
+    /* ══════════════════════════════════════ */
+    .shop-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(18, 16, 22, 0.99);
+      z-index: 180;
+      display: none;
+      flex-direction: column;
+      padding: 45px 16px 20px;
+    }
+
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .shop-title {
+      font-family: 'Space Grotesk';
+      font-size: 1.15rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--yellow), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .shop-close {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--text-sub);
+    }
+
+    .shop-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: 12px;
+    }
+
+    .shop-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 20px;
+      padding: 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .shop-item-icon {
+      font-size: 2rem;
+      margin-bottom: 4px;
+    }
+
+    .shop-item-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .shop-item-price {
+      font-size: 0.65rem;
+      color: var(--yellow);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .shop-buy-btn {
+      background: var(--yellow);
+      border: none;
+      color: #121016;
+      font-weight: 700;
+      font-size: 0.7rem;
+      padding: 6px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .shop-buy-btn.equipped {
+      background: var(--cyan);
+      color: #121016;
+    }
+
+    .shop-buy-btn.purchased {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-sub);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    /* ══════════════════════════════════════ */
+    /* RIGHT COLUMN: INFORMATION PANELS      */
+    /* ══════════════════════════════════════ */
+    .info-panel {
+      display: none;
+    }
+
+    .info-panel.active {
+      display: block;
+      animation: fadeInPanel 0.35s ease;
+    }
+
+    @keyframes fadeInPanel {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .info-title {
+      font-family: 'Space Grotesk';
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .info-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+
+    .info-section {
+      margin-bottom: 20px;
+    }
+
+    .info-section h3 {
+      font-family: 'Space Grotesk';
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .info-section p,
+    .info-section li {
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      line-height: 1.5;
+      margin-bottom: 6px;
+    }
+
+    .info-section ul {
+      list-style-position: inside;
+      padding-left: 4px;
+    }
+
+    .highlight-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid;
+      margin: 12px 0;
+    }
+
+    .highlight-card.orange {
+      background: rgba(255, 158, 121, 0.05);
+      border-color: rgba(255, 158, 121, 0.15);
+    }
+
+    .highlight-card.cyan {
+      background: rgba(128, 222, 234, 0.04);
+      border-color: rgba(128, 222, 234, 0.15);
+    }
+
+    .highlight-card.purple {
+      background: rgba(179, 157, 219, 0.05);
+      border-color: rgba(179, 157, 219, 0.15);
+    }
+
+    .highlight-card.green {
+      background: rgba(128, 203, 196, 0.05);
+      border-color: rgba(128, 203, 196, 0.15);
+    }
+
+    .hc-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .hc-desc {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+
+    .screen-nav-label {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .main-layout {
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+      }
+
+      .phone-col {
+        position: static;
+      }
+
+      .info-col {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Ambient Particles Background -->
+  <div class="particles" id="particles"></div>
+
+  <!-- HERO TITLE -->
+  <section class="hero">
+    <div class="hero-badge">🧬 Dopamind Redesign Playbook</div>
+    <h1>iMaxx — Gamified Redesign</h1>
+    <p class="hero-sub">
+      A fully interactive, client-side prototype demonstrating the gamification mechanics of <strong>Corti</strong>,
+      your brain-companion. Test soundscape audio mixers, habit gardens, and alarm riddle challenges below.
+    </p>
+  </section>
+
+  <!-- MAIN LAYOUT -->
+  <div class="main-layout">
+    <!-- LEFT: PHONE SIMULATOR -->
+    <div class="phone-col">
+      <div class="phone-frame">
+        <div class="phone-island"></div>
+        <div class="phone-screen">
+
+          <!-- TOP SPARKS ROW (Fixed outside screens to prevent overlap) -->
+          <div class="phone-top-bar">
+            <div class="xp-badge" id="global-level-lbl">Level 7</div>
+            <div class="sparks-pill" onclick="openShop()">
+              <span>✨</span> <span id="global-sparks-lbl">180</span> Sparks
+            </div>
+          </div>
+
+          <!-- ═══════ SCREEN: HOME ═══════ -->
+          <div class="screen active" id="screen-home">
+            <div class="home-avatar-row" style="margin-top: 4px;">
+              <div>
+                <div class="home-user-greeting">Welcome back,</div>
+                <div class="home-user-name">Umair 👋</div>
+              </div>
+              <div style="font-size: 1.4rem;">🌟</div>
+            </div>
+
+            <!-- Corti's Room Stage (Finch scenery layout) -->
+            <div class="mascot-stage" id="mascot-home-stage">
+              <div class="stage-stars"></div>
+
+              <!-- Floating Clouds -->
+              <div class="stage-clouds">
+                <div class="cloud-unit c1">☁️</div>
+                <div class="cloud-unit c2">☁️</div>
+              </div>
+
+              <!-- Hills SVGs at the bottom -->
+              <div class="stage-hills">
+                <svg viewBox="0 0 100 20" preserveAspectRatio="none">
+                  <path class="stage-hill-1" d="M 0,20 C 30,10 70,5 100,20 Z" />
+                  <path class="stage-hill-2" d="M 0,20 C 40,8 60,12 100,20 Z" />
+                </svg>
+              </div>
+
+              <!-- Floating Mascot Container -->
+              <div class="corti-mascot-wrapper corti-float-anim" id="home-mascot-wrapper" onclick="petMascot()"
+                style="z-index: 5;">
+                <!-- Speech Bubble -->
+                <div class="mascot-bubble" id="mascot-bubble-dialog">Corti is ready! 🚀</div>
+
+                <!-- Corti Modular SVG Structure -->
+                <svg viewBox="0 0 100 100" class="corti-svg-element state-happy" id="corti-main-svg">
+                  <g class="corti-glow-layer">
+                    <!-- Fog Layer (foggy) -->
+                    <g class="corti-effect-fog">
+                      <path d="M 28,45 C 30,30 70,30 72,45 C 70,60 30,60 28,45 M 34,40 C 40,25 65,30 60,50" fill="none"
+                        stroke="#8e85a6" stroke-width="2.5" stroke-linecap="round" />
+                    </g>
+                    <!-- Confetti Layer (celebrating) -->
+                    <g class="corti-effect-confetti">
+                      <circle cx="15" cy="20" r="2.5" fill="#80cbc4" />
+                      <circle cx="85" cy="22" r="3" fill="#ff9e79" />
+                      <circle cx="80" cy="72" r="2" fill="#ffe082" />
+                      <circle cx="20" cy="70" r="2.5" fill="#ff8fb1" />
+                    </g>
+                    <!-- Main Body cloud/brain -->
+                    <path class="corti-cloud-body"
+                      d="M 50,75 C 36,75 26,67 26,56 C 26,51 28,47 32,44 C 28,38 31,31 38,29 C 41,22 48,20 54,22 C 59,20 66,22 69,29 C 76,31 79,38 75,44 C 79,47 81,51 81,56 C 81,67 71,75 50,75 Z"
+                      fill="#b39ddb" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" />
+                    <!-- Sleeping night cap (sleepy) -->
+                    <path class="corti-gear-cap" d="M 44,23 C 44,12 62,6 64,15 C 64,19 56,23 51,23 Z" fill="#b39ddb"
+                      stroke="#fff" stroke-width="1" />
+                    <!-- Focus Glasses (focus) -->
+                    <g class="corti-gear-glasses">
+                      <circle cx="42" cy="46" r="7" fill="none" stroke="#121016" stroke-width="2" />
+                      <circle cx="58" cy="46" r="7" fill="none" stroke="#121016" stroke-width="2" />
+                      <line x1="49" y1="46" x2="51" y2="46" stroke="#121016" stroke-width="2" />
+                    </g>
+                    <!-- Eyes Standard Happy -->
+                    <g class="corti-eyes-happy">
+                      <circle cx="42" cy="46" r="3.5" fill="#121016" />
+                      <circle cx="58" cy="46" r="3.5" fill="#121016" />
+                    </g>
+                    <!-- Eyes Focus -->
+                    <g class="corti-eyes-focus">
+                      <circle cx="42" cy="46" r="3" fill="#121016" />
+                      <circle cx="58" cy="46" r="3" fill="#121016" />
+                    </g>
+                    <!-- Eyes Sleepy -->
+                    <g class="corti-eyes-sleepy">
+                      <path d="M 38,47 Q 42,50 46,47" stroke="#121016" stroke-width="2.5" stroke-linecap="round"
+                        fill="none" />
+                      <path d="M 54,47 Q 58,50 62,47" stroke="#121016" stroke-width="2.5" stroke-linecap="round"
+                        fill="none" />
+                    </g>
+                    <!-- Eyes Foggy -->
+                    <g class="corti-eyes-foggy">
+                      <path d="M 39,46 Q 42,43 42,46 Q 42,49 39,49 Q 36,46 39,43" stroke="#121016" stroke-width="1.8"
+                        fill="none" />
+                      <path d="M 57,46 Q 60,43 60,46 Q 60,49 57,49 Q 54,46 57,43" stroke="#121016" stroke-width="1.8"
+                        fill="none" />
+                    </g>
+                    <!-- Mouth Smile -->
+                    <path class="corti-mouth-smile" d="M 46,55 Q 50,59 54,55" stroke="#121016" stroke-width="2"
+                      stroke-linecap="round" fill="none" />
+                    <!-- Mouth Sleepy -->
+                    <circle class="corti-mouth-sleepy" cx="50" cy="55" r="2.5" fill="#121016" />
+                    <!-- Mouth Open -->
+                    <path class="corti-mouth-open" d="M 45,53 Q 50,61 55,53 Z" fill="#121016" />
+
+                    <!-- SHOP ACCESSORY: HEADPHONES -->
+                    <g class="corti-acc-headphones">
+                      <rect x="23" y="32" width="6" height="15" rx="3" fill="#80deea" />
+                      <rect x="71" y="32" width="6" height="15" rx="3" fill="#80deea" />
+                      <path d="M 26,34 C 26,16 74,16 74,34" fill="none" stroke="#80deea" stroke-width="3.5" />
+                    </g>
+                    <!-- SHOP ACCESSORY: GOLDEN CROWN -->
+                    <path class="corti-acc-crown" d="M 38,20 L 41,12 L 48,16 L 50,10 L 52,16 L 59,12 L 62,20 Z"
+                      fill="#ffe082" stroke="#e67e22" stroke-width="1" />
+                    <!-- SHOP ACCESSORY: HEART SUNGLASSES -->
+                    <g class="corti-acc-sunglasses">
+                      <path d="M 33,45 C 33,39 46,39 46,45 C 46,51 33,51 33,45 Z" fill="#ff8fb1" stroke="#fff"
+                        stroke-width="1" />
+                      <path d="M 54,45 C 54,39 67,39 67,45 C 67,51 54,51 54,45 Z" fill="#ff8fb1" stroke="#fff"
+                        stroke-width="1" />
+                      <line x1="46" y1="45" x2="54" y2="45" stroke="#ff8fb1" stroke-width="2" />
+                    </g>
+                    <!-- SHOP ACCESSORY: SCARF -->
+                    <path class="corti-acc-scarf" d="M 35,68 C 45,74 55,74 65,68 L 60,78 L 40,78 Z" fill="#ef5350" />
+                  </g>
+                </svg>
+              </div>
+
+              <!-- Mascot Controls -->
+              <div class="mascot-controls">
+                <button class="mascot-btn" onclick="petMascot()">❤️ Pet Corti</button>
+                <div style="position: relative;">
+                  <button class="mascot-btn" onclick="toggleFeedMenu()">🍎 Feed</button>
+                  <div class="feed-menu" id="feed-menu-list">
+                    <div class="feed-option" onclick="feedMascot('coffee')">☕ Coffee (+10 Energy)</div>
+                    <div class="feed-option" onclick="feedMascot('berry')">🍓 Berry (+15 Mood)</div>
+                    <div class="feed-option" onclick="feedMascot('tea')">🍵 Sleep Tea (+20 Calm)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mascot status details -->
+            <div class="glass-card">
+              <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom: 6px;">
+                <span id="mascot-status-msg">Corti is feeling fantastic! ✨</span>
+                <span class="xp-badge" id="mascot-streak-lbl"
+                  style="background: rgba(255,158,121,0.08); border-color: rgba(255,158,121,0.25); color: var(--orange);">🔥
+                  14 Days</span>
+              </div>
+              <div style="display: flex; gap: 10px; font-size:0.6rem; color: var(--text-sub);">
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                    <span>Energy</span><span id="stat-energy">80%</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="fill-energy" style="width: 80%; background: var(--orange);"></div>
+                  </div>
+                </div>
+                <div style="flex:1;">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                    <span>Mood</span><span id="stat-mood">90%</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="fill-mood" style="width: 90%; background: var(--pink);"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Adventure Quests (Engaging Daily Loop) -->
+            <div class="glass-card adventure-card">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:0.78rem; font-weight:700; color: var(--orange);">Adventure Quest</div>
+                  <div style="font-size:0.62rem; color: var(--text-sub);" id="adventure-desc">Send Corti to explore Calm
+                    Forest</div>
+                </div>
+                <div id="adventure-timer-display"
+                  style="font-family:'Space Grotesk'; font-size:0.8rem; font-weight:700;">Ready</div>
+              </div>
+              <div class="progress-track" style="margin-top: 8px; height: 5px;">
+                <div class="progress-fill" id="adventure-progress-fill" style="width: 0%; background: var(--orange);">
+                </div>
+              </div>
+              <button class="adventure-btn" id="adventure-action-btn" onclick="startAdventure()">Send on
+                Adventure</button>
+            </div>
+
+            <!-- Today Stats row -->
+            <div class="section-label">Today's Activity</div>
+            <div style="display:flex; gap: 6px;">
+              <div class="glass-card" style="flex:1; text-align:center; padding: 10px 4px; margin-bottom: 0;">
+                <div style="font-family:'Space Grotesk'; font-size:1rem; font-weight:700; color:var(--orange);"
+                  id="stat-focus-time">1h 45m</div>
+                <div style="font-size:0.55rem; color:var(--text-sub);">Focus Time</div>
+              </div>
+              <div class="glass-card" style="flex:1; text-align:center; padding: 10px 4px; margin-bottom: 0;">
+                <div style="font-family:'Space Grotesk'; font-size:1rem; font-weight:700; color:var(--green);"
+                  id="stat-habits-done">2/4</div>
+                <div style="font-size:0.55rem; color:var(--text-sub);">Habits watered</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════ SCREEN: SLOWMAXX / RELAX ═══════ -->
+          <div class="screen" id="screen-slowmaxx">
+            <div class="header-row" style="margin-top: 4px;">
+              <span class="screen-title-text" style="color:var(--cyan);">SlowMaxx Lounge</span>
+              <span class="xp-badge"
+                style="background: rgba(128,222,234,0.08); border-color: rgba(128,222,234,0.25); color: var(--cyan);">🎵
+                Calm/Endel</span>
+            </div>
+
+            <!-- Visual Breathing Assist Widget -->
+            <div class="glass-card" style="text-align: center;">
+              <div class="section-label" style="padding:0; margin-bottom:6px;" id="breathe-status-lbl">Tap Corti below
+                to start box breathing</div>
+              <div class="breathe-circle-wrap">
+                <div class="breathe-circle" id="breathe-assist-circle">4s Breathe</div>
+              </div>
+            </div>
+
+            <!-- Soundscape Ambient Mixer -->
+            <div class="section-label">Ambient Soundscape Mixer</div>
+            <div class="glass-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.75rem; font-weight:600;">Play generative soundscape</span>
+                <!-- Play button -->
+                <button class="timer-btn-sub" style="width:30px; height:30px; font-size:0.7rem;" id="mixer-play-btn"
+                  onclick="toggleMixerAudio()">▶</button>
+              </div>
+              <div class="mixer-sliders">
+                <div class="mixer-row">
+                  <span class="mixer-label">🌧️ Forest Rain</span>
+                  <input type="range" class="mixer-input" id="slide-rain" value="40" min="0" max="100"
+                    oninput="updateMixerVolume()">
+                </div>
+                <div class="mixer-row">
+                  <span class="mixer-label">Waves</span>
+                  <input type="range" class="mixer-input" id="slide-ocean" value="20" min="0" max="100"
+                    oninput="updateMixerVolume()">
+                </div>
+                <div class="mixer-row">
+                  <span class="mixer-label">🎹 Lofi Drone</span>
+                  <input type="range" class="mixer-input" id="slide-lofi" value="50" min="0" max="100"
+                    oninput="updateMixerVolume()">
+                </div>
+                <div class="mixer-row">
+                  <span class="mixer-label">🧘 Binaural</span>
+                  <input type="range" class="mixer-input" id="slide-binaural" value="0" min="0" max="100"
+                    oninput="updateMixerVolume()">
+                </div>
+              </div>
+              <canvas class="visualizer-canvas" id="ambient-waves-canvas"></canvas>
+            </div>
+
+            <!-- ADHD Grounding Exercise -->
+            <div class="glass-card" style="margin-bottom:0;" onclick="startGrounding()">
+              <div style="font-size:0.78rem; font-weight:700; color:var(--cyan); margin-bottom:4px;">ADHD Sensory
+                Grounding</div>
+              <div style="font-size:0.62rem; color:var(--text-sub); line-height: 1.3;" id="grounding-text">Click here to
+                begin 5-4-3-2-1 reset guide.</div>
+            </div>
+          </div>
+
+          <!-- ═══════ SCREEN: FOCUS TIMER ═══════ -->
+          <div class="screen" id="screen-timer">
+            <div class="header-row" style="margin-top: 4px;">
+              <span class="screen-title-text" style="color:var(--orange);">ADHD Focus Timer</span>
+              <span class="xp-badge"
+                style="background: rgba(255,158,121,0.08); border-color: rgba(255,158,121,0.25); color: var(--orange);">✨
+                +30 Sparks</span>
+            </div>
+
+            <!-- Co-working mascot window -->
+            <div class="glass-card typing-desk" id="coworking-desk-area">
+              <span style="font-size:0.65rem; color:var(--text-sub); margin-bottom:8px;" id="cowork-lbl">Corti is
+                waiting to work with you</span>
+              <div id="timer-mascot-anchor"></div>
+              <!-- Mini laptop and typing hands -->
+              <svg class="laptop-svg" viewBox="0 0 100 100">
+                <rect x="25" y="60" width="50" height="4" fill="#6B6280" />
+                <path d="M 30,60 L 40,35 L 60,35 L 70,60 Z" fill="#181520" stroke="#6B6280" stroke-width="1.5" />
+                <rect x="42" y="42" width="16" height="10" rx="1" fill="#80deea"
+                  style="opacity: 0.8; filter: drop-shadow(0 0 4px #80deea);" />
+                <path d="M 20,64 L 80,64 L 75,70 L 25,70 Z" fill="#221e2f" />
+              </svg>
+              <div class="corti-hands">
+                <div class="corti-hand hand-l"></div>
+                <div class="corti-hand hand-r"></div>
+              </div>
+            </div>
+
+            <!-- Radial Focus timer ring -->
+            <div class="focus-ring-container">
+              <div class="focus-ring">
+                <svg viewBox="0 0 180 180">
+                  <defs>
+                    <linearGradient id="focusTimerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:var(--orange)" />
+                      <stop offset="100%" style="stop-color:var(--pink)" />
+                    </linearGradient>
+                  </defs>
+                  <circle class="ring-bg" cx="90" cy="90" r="80" />
+                  <circle class="ring-progress" id="timer-ring-circle" cx="90" cy="90" r="80" />
+                </svg>
+                <div style="text-align: center; z-index: 10;">
+                  <div class="timer-val" id="timer-clock-text">25:00</div>
+                  <div class="timer-lbl" id="timer-status-sub">POMODORO</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="timer-btns">
+              <button class="timer-btn-sub" onclick="resetFocusTimer()">⟲</button>
+              <button class="timer-btn-primary" id="focus-play-btn" onclick="toggleFocusTimer()">▶</button>
+              <button class="timer-btn-sub" onclick="skipFocusTimer()">⏭</button>
+            </div>
+
+            <!-- Alarm Focus Mode config -->
+            <div class="glass-card"
+              style="margin-top: 12px; display:flex; align-items:center; justify-content:space-between; margin-bottom: 0;">
+              <div>
+                <div style="font-size:0.75rem; font-weight:700;">Challenge Mode lockout</div>
+                <div style="font-size:0.6rem; color:var(--text-sub);">Must shake phone to pause focus</div>
+              </div>
+              <input type="checkbox" id="challenge-lockout-toggle" style="accent-color:var(--orange); cursor:pointer;">
+            </div>
+          </div>
+
+          <!-- ═══════ SCREEN: SLEEP ═══════ -->
+          <div class="screen" id="screen-sleep">
+            <div class="header-row" style="margin-top: 4px;">
+              <span class="screen-title-text" style="color:var(--purple);">Smart Sleep & Alarm</span>
+              <span class="xp-badge"
+                style="background: rgba(179,157,219,0.08); border-color: rgba(179,157,219,0.25); color: var(--purple);">💤
+                Wind-down</span>
+            </div>
+
+            <!-- Bedtime wind-down checklist -->
+            <div class="section-label">Wind-down Checklist</div>
+            <div class="glass-card">
+              <div class="checklist-row">
+                <div class="check-item done" onclick="toggleCheckItem(this)">
+                  <div class="check-box">✓</div>
+                  <div style="font-size:0.72rem;">
+                    <div style="font-weight:600;">📵 Screen Lockout</div>
+                    <div style="font-size:0.6rem; color:var(--text-sub);">Ditch social scrolls 30m prior</div>
+                  </div>
+                </div>
+                <div class="check-item" onclick="toggleCheckItem(this)">
+                  <div class="check-box"></div>
+                  <div style="font-size:0.72rem;">
+                    <div style="font-weight:600;">📖 Read 10 pages</div>
+                    <div style="font-size:0.6rem; color:var(--text-sub);">Calm eyes with paper books</div>
+                  </div>
+                </div>
+                <div class="check-item" onclick="toggleCheckItem(this)">
+                  <div class="check-box"></div>
+                  <div style="font-size:0.72rem;">
+                    <div style="font-weight:600;">🧘 Deep breathing scan</div>
+                    <div style="font-size:0.6rem; color:var(--text-sub);">Guide Corti to sleep</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Smart Alarm Settings (Sleepy cloned) -->
+            <div class="section-label">Wake Challenges (Sleepy Mode)</div>
+            <div class="glass-card">
+              <div class="alarm-setting-box" style="margin-bottom: 8px;">
+                <div>
+                  <input type="time" class="alarm-time-picker" value="06:30">
+                  <div style="font-size:0.58rem; color:var(--text-sub); margin-top:2px;">Repeat: Mon - Fri</div>
+                </div>
+                <select class="alarm-select" id="alarm-challenge-type">
+                  <option value="math">🧠 Math (3 Riddles)</option>
+                  <option value="shake">📳 Shake (15 Times)</option>
+                </select>
+              </div>
+              <button class="adventure-btn" style="background:var(--purple); color:#121016; width:100%; margin:0;"
+                onclick="triggerAlarmSimulation()">Test Alarm challenge</button>
+            </div>
+          </div>
+
+          <!-- ═══════ SCREEN: HABITS ═══════ -->
+          <div class="screen" id="screen-habits">
+            <div class="header-row" style="margin-top: 4px;">
+              <span class="screen-title-text" style="color:var(--green);">Habit Garden & Shop</span>
+              <span class="xp-badge"
+                style="background: rgba(128,203,196,0.08); border-color: rgba(128,203,196,0.25); color: var(--green);">🌱
+                Garden Kit</span>
+            </div>
+
+            <!-- Garden plots -->
+            <div class="garden-grid">
+              <div class="garden-plot watered" id="plot-water" onclick="waterPlot('plot-water', '💧', '🌸')">
+                <div class="garden-plot-header">
+                  <span class="plot-title">Hydration</span>
+                  <div class="plot-status-dot">✓</div>
+                </div>
+                <div class="plot-plant-visual">🌸</div>
+                <div class="plot-streak">Streak: 8d</div>
+                <div class="watering-can-fx">🚿</div>
+              </div>
+
+              <div class="garden-plot" id="plot-reading" onclick="waterPlot('plot-reading', '📚', '🌿')">
+                <div class="garden-plot-header">
+                  <span class="plot-title">Read Book</span>
+                  <div class="plot-status-dot"></div>
+                </div>
+                <div class="plot-plant-visual">🌱</div>
+                <div class="plot-streak">Streak: 5d</div>
+                <div class="watering-can-fx">🚿</div>
+              </div>
+
+              <div class="garden-plot" id="plot-gym" onclick="waterPlot('plot-gym', '🏃', '🌻')">
+                <div class="garden-plot-header">
+                  <span class="plot-title">Exercise</span>
+                  <div class="plot-status-dot"></div>
+                </div>
+                <div class="plot-plant-visual">🌱</div>
+                <div class="plot-streak">Streak: 3d</div>
+                <div class="watering-can-fx">🚿</div>
+              </div>
+
+              <div class="garden-plot watered" id="plot-zen" onclick="waterPlot('plot-zen', '🧘', '🌺')">
+                <div class="garden-plot-header">
+                  <span class="plot-title">Meditate</span>
+                  <div class="plot-status-dot">✓</div>
+                </div>
+                <div class="plot-plant-visual">🌺</div>
+                <div class="plot-streak">Streak: 14d</div>
+                <div class="watering-can-fx">🚿</div>
+              </div>
+            </div>
+
+            <!-- Custom task checklist input -->
+            <div class="todo-list-wrap">
+              <div class="todo-input-row">
+                <input type="text" class="todo-input" id="new-todo-text" placeholder="Add custom goal...">
+                <button class="todo-add-btn" onclick="addNewTodo()">Add</button>
+              </div>
+              <div class="todo-items" id="todo-items-list">
+                <!-- Added dynamically -->
+              </div>
+            </div>
+
+            <!-- Shop entry button -->
+            <div class="glass-card"
+              style="margin-bottom:0; display:flex; align-items:center; justify-content:space-between; border-color:var(--yellow); background:rgba(255, 224, 130, 0.03);">
+              <div>
+                <div style="font-size:0.75rem; font-weight:700; color:var(--yellow);">Dopamine Shop</div>
+                <div style="font-size:0.6rem; color:var(--text-sub);">Unlock accessories for Corti</div>
+              </div>
+              <button class="mascot-btn" style="background:var(--yellow); color:#121016; border:none;"
+                onclick="openShop()">Shop Catalog</button>
+            </div>
+          </div>
+
+          <!-- ═══════ OVERLAY: WAKE ALARM SIMULATOR ═══════ -->
+          <div class="alarm-simulation-overlay" id="alarm-sim-overlay">
+            <div class="alarm-alert-icon">⏰</div>
+            <h2 style="font-family:'Space Grotesk'; font-size:1.6rem; margin-top:8px;">WAKE UP RIGOROUSLY</h2>
+            <p style="font-size:0.75rem; color:var(--text-sub); margin-top:4px;">Silencing alarm challenge activated!
+            </p>
+
+            <div class="challenge-card" id="math-challenge-box">
+              <div class="challenge-title">Solve 3 equations to dismiss</div>
+              <div style="font-size:0.68rem; color:var(--text-sub);" id="math-challenge-count">Riddle 1 of 3</div>
+              <div class="challenge-math-question" id="math-equation-text">14 + 18</div>
+              <input type="number" class="challenge-math-input" id="math-challenge-answer" placeholder="?"
+                oninput="checkMathChallenge()">
+            </div>
+
+            <div class="challenge-card" id="shake-challenge-box" style="display:none;">
+              <div class="challenge-title">Shake phone rapidly to wake up</div>
+              <div style="font-size:0.68rem; color:var(--text-sub);" id="shake-challenge-count">0 of 15 shakes</div>
+              <div class="shake-progress-bar">
+                <div class="shake-progress-fill" id="shake-fill"></div>
+              </div>
+              <button class="adventure-btn" style="background:var(--pink); color:#fff; width:100%;"
+                onclick="simulateDeviceShake()">SHAKE PHONE (Click)</button>
+            </div>
+          </div>
+
+          <!-- ═══════ OVERLAY: ACCESSORIES SPARKS SHOP ═══════ -->
+          <div class="shop-modal" id="shop-catalog-modal">
+            <div class="shop-header">
+              <span class="shop-title">Sparks Accessory Catalog</span>
+              <button class="shop-close" onclick="closeShop()">✕</button>
+            </div>
+            <div style="font-size:0.65rem; color:var(--text-sub); margin-bottom:12px;">Customize Corti! Purchased gear
+              applies to all screens instantly.</div>
+            <div class="shop-grid" id="shop-grid-items">
+              <!-- Dynamically populated in script -->
+            </div>
+          </div>
+
+        </div> <!-- end phone screen -->
+
+        <!-- PHONE BOTTOM NAV -->
+        <div class="bottom-nav">
+          <div class="nav-item active" onclick="switchScreen('home')" id="nav-home">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">Home</div>
+          </div>
+          <div class="nav-item" onclick="switchScreen('sleep')" id="nav-sleep">
+            <div class="nav-icon">🌙</div>
+            <div class="nav-label">Sleep</div>
+          </div>
+          <div class="nav-item" onclick="switchScreen('slowmaxx')" id="nav-slowmaxx">
+            <div class="nav-center">
+              <div class="nav-icon">🧠</div>
+            </div>
+          </div>
+          <div class="nav-item" onclick="switchScreen('timer')" id="nav-timer">
+            <div class="nav-icon">⏱️</div>
+            <div class="nav-label">Focus</div>
+          </div>
+          <div class="nav-item" onclick="switchScreen('habits')" id="nav-habits">
+            <div class="nav-icon">🌱</div>
+            <div class="nav-label">Garden</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="screen-nav-label" id="screen-label">Home</div>
+    </div>
+
+    <!-- RIGHT: CONTEXT INFO PANELS -->
+    <div class="info-col">
+      <!-- HOME PANEL -->
+      <div class="info-panel active" id="info-home">
+        <div class="info-title">🏠 Home — Companion Core</div>
+        <div class="info-subtitle">The user's home centers on Corti's room. Micro-interactions keep the user returning.
+        </div>
+
+        <div class="info-section">
+          <h3>🧸 Physical Nurture Loop</h3>
+          <p>Users can <strong>Pet</strong> or <strong>Feed</strong> Corti, instantly changing mood/energy stats and
+            updating dialog lines. This bridges the clinical productivity gap with emotional care.</p>
+        </div>
+
+        <div class="highlight-card orange">
+          <div class="hc-title">🧭 Adventure Quests & Exploration</div>
+          <div class="hc-desc">
+            Sending Corti on Quests models the central retention engine of Finch. Focusing or checks-offs fuel Corti's
+            journey. When the quest finishes, Corti returns with Sparks and a journal entry detail.
+          </div>
+        </div>
+      </div>
+
+      <!-- SLEEP PANEL -->
+      <div class="info-panel" id="info-sleep">
+        <div class="info-title">🌙 Sleep — Wake Challenges</div>
+        <div class="info-subtitle">A Cozy wind-down room combined with robust Sleepy-style challenges.</div>
+
+        <div class="info-section">
+          <h3>📵 Wind-down checklist</h3>
+          <p>Checking wind-down boxes makes Corti drop into a purple sleepy state with a nightcap. Sticking to bed
+            routines increases calm multipliers.</p>
+        </div>
+
+        <div class="highlight-card purple">
+          <div class="hc-title">🧠 Alarm challenges (Sleepy Moat)</div>
+          <div class="hc-desc">
+            Test the alarm simulation! Solve math riddle series or shake to dismiss. It ensures deep sleep sleepers
+            cannot easily dismiss alarms and sleep back in.
+          </div>
+        </div>
+      </div>
+
+      <!-- SLOWMAXX PANEL -->
+      <div class="info-panel" id="info-slowmaxx">
+        <div class="info-title">🧠 SlowMaxx — Relax Soundscapes</div>
+        <div class="info-subtitle">Generative background acoustics & visual pacing tools to regulate brain waves.</div>
+
+        <div class="info-section">
+          <h3>🫧 Generative synthesizers</h3>
+          <p>Unlocks Calm/Endel audience. Drag sliders for Forest Rain, Waves, Lofi Pad, and detuned Binaural audio. A
+            real synthesizer generates relaxing beats directly in the browser.</p>
+        </div>
+
+        <div class="highlight-card cyan">
+          <div class="hc-title">🌊 Pulse waves visualizer</div>
+          <div class="hc-desc">
+            A canvas visualizer pulses and graphs frequencies dynamically. Tapping Corti starts breathing visual guide
+            pacing (4-4-4-4).
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMER PANEL -->
+      <div class="info-panel" id="info-timer">
+        <div class="info-title">⏱️ Focus — Co-working companion</div>
+        <div class="info-subtitle">Pomodoro with visual company and distraction locks.</div>
+
+        <div class="info-section">
+          <h3>💻 Companion Co-Working</h3>
+          <p>Corti sits in a custom desk, typing alongside the user. Pause/Stop triggers alert dialogue. If challenge
+            lockout is checkmarked, pausing requires immediate shaking device validation.</p>
+        </div>
+      </div>
+
+      <!-- HABITS PANEL -->
+      <div class="info-panel" id="info-habits">
+        <div class="info-title">🌱 Garden — Habit Bloom & Shop</div>
+        <div class="info-subtitle">Check items grow plots. Spend Sparks to customize Corti.</div>
+
+        <div class="info-section">
+          <h3>🚿 Watering animations</h3>
+          <p>Watering plot plants triggers watering can float details. Seeds grow to sprouts, then blooming flowers over
+            days.</p>
+        </div>
+
+        <div class="highlight-card green">
+          <div class="hc-title">✨ Dopamine customizer shop</div>
+          <div class="hc-desc">
+            Accumulate sparks to unlock Headphones, Scarves, Hearts, and Crowns. Equipping items adds overlays to Corti
+            across the entire app interface.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ══════════════════════════════════════
+    // STATE DATA
+    // ══════════════════════════════════════
+    const state = {
+      sparks: 180,
+      level: 7,
+      xp: 420,
+      streak: 14,
+      energy: 80,
+      mood: 90,
+      mascotState: 'happy', // happy, focus, sleepy, foggy, celebrating
+      activeScreen: 'home',
+      soundPlaying: false,
+      equippedAccessories: [],
+      purchasedAccessories: ['sunglasses'], // Default unlocked
+      focusTimeToday: 105, // 1h 45m
+      habitsWatered: 2,
+      adventureActive: false,
+      adventureProgress: 0,
+      alarmActive: false,
+      alarmType: 'math',
+      alarmMathStep: 1,
+      alarmMathAnswer: 0,
+      alarmShakeCount: 0,
+      todoTasks: [
+        { id: 1, text: "Write focus goals", done: false }
+      ]
+    };
+
+    const accessoriesCatalog = [
+      { id: 'headphones', name: 'DJ Headphones', icon: '🎧', price: 80 },
+      { id: 'crown', name: 'Golden Crown', icon: '👑', price: 150 },
+      { id: 'sunglasses', name: 'Heart Sunglasses', icon: '🕶️', price: 50 },
+      { id: 'scarf', name: 'Winter Scarf', icon: '🧣', price: 60 }
+    ];
+
+    // ══════════════════════════════════════
+    // SCREEN SWITCHING
+    // ══════════════════════════════════════
+    const screenLabels = {
+      home: 'Home', sleep: 'Sleep & Wind Down',
+      slowmaxx: 'SlowMaxxing', timer: 'Focus Timer', habits: 'Habit Garden'
+    };
+
+    function switchScreen(name) {
+      state.activeScreen = name;
+
+      // Toggle phone screen divs
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + name).classList.add('active');
+
+      // Toggle nav bar active indicator
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('nav-' + name).classList.add('active');
+
+      // Toggle info panels on the right side
+      document.querySelectorAll('.info-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('info-' + name).classList.add('active');
+
+      // Update phone footer status text
+      document.getElementById('screen-label').textContent = screenLabels[name];
+
+      // Auto state adaptation
+      if (name === 'timer') {
+        setMascotExpression('focus');
+        document.getElementById('timer-mascot-anchor').appendChild(document.getElementById('corti-main-svg'));
+      } else if (name === 'sleep') {
+        setMascotExpression('sleepy');
+        document.getElementById('mascot-home-stage').classList.add('night');
+      } else if (name === 'habits') {
+        setMascotExpression('celebrating');
+      } else {
+        setMascotExpression('happy');
+        document.getElementById('mascot-home-stage').classList.remove('night');
+        document.getElementById('mascot-home-stage').appendChild(document.getElementById('corti-main-svg'));
+      }
+    }
+
+    // ══════════════════════════════════════
+    // MASCOT EXPRESSION MANAGEMENT
+    // ══════════════════════════════════════
+    function setMascotExpression(expressionClass) {
+      state.mascotState = expressionClass;
+      const mascotSVG = document.getElementById('corti-main-svg');
+      mascotSVG.className = 'corti-svg-element state-' + expressionClass;
+    }
+
+    // Speech bubble bubbles
+    function showSpeechBubble(msg) {
+      const bubble = document.getElementById('mascot-bubble-dialog');
+      bubble.textContent = msg;
+      bubble.classList.add('active');
+      setTimeout(() => {
+        bubble.classList.remove('active');
+      }, 2500);
+    }
+
+    // Pet Corti squash / heart particles
+    function petMascot() {
+      const element = document.getElementById('home-mascot-wrapper');
+      element.style.transform = 'scale(1.15) translateY(4px)';
+      setMascotExpression('celebrating');
+      showSpeechBubble("Ah! That tickles! ❤️");
+      setTimeout(() => {
+        element.style.transform = '';
+        if (state.activeScreen === 'home') setMascotExpression('happy');
+      }, 800);
+      addSparks(5);
+    }
+
+    function toggleFeedMenu() {
+      const menu = document.getElementById('feed-menu-list');
+      menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function feedMascot(item) {
+      toggleFeedMenu();
+      setMascotExpression('celebrating');
+      showSpeechBubble("Nom nom... Delish! 🍓");
+
+      if (item === 'coffee') {
+        state.energy = Math.min(100, state.energy + 10);
+      } else if (item === 'berry') {
+        state.mood = Math.min(100, state.mood + 15);
+      } else if (item === 'tea') {
+        state.energy = Math.max(20, state.energy - 10);
+        state.mood = Math.min(100, state.mood + 10);
+      }
+
+      updateUI();
+      setTimeout(() => {
+        if (state.activeScreen === 'home') setMascotExpression('happy');
+      }, 1500);
+    }
+
+    // ══════════════════════════════════════
+    // ADVENTURE LOOP SYSTEM
+    // ══════════════════════════════════════
+    function startAdventure() {
+      if (state.adventureActive) return;
+      state.adventureActive = true;
+      state.adventureProgress = 0;
+      setMascotExpression('happy');
+      document.getElementById('adventure-action-btn').disabled = true;
+      document.getElementById('adventure-action-btn').textContent = "Exploring Calm Forest...";
+
+      const interval = setInterval(() => {
+        state.adventureProgress += 10;
+        document.getElementById('adventure-progress-fill').style.width = state.adventureProgress + '%';
+        document.getElementById('adventure-timer-display').textContent = (10 - (state.adventureProgress / 10)) + 's';
+
+        // Make mascot walk left/right on scenery while exploring
+        const mascotWrapper = document.getElementById('home-mascot-wrapper');
+        const offset = (state.adventureProgress % 20 === 0) ? '10px' : '-10px';
+        mascotWrapper.style.transform = `translateX(${offset}) translateY(-2px)`;
+
+        if (state.adventureProgress >= 100) {
+          clearInterval(interval);
+          state.adventureActive = false;
+          mascotWrapper.style.transform = '';
+          document.getElementById('adventure-action-btn').disabled = false;
+          document.getElementById('adventure-action-btn').textContent = "Send on Adventure";
+          document.getElementById('adventure-timer-display').textContent = "Completed!";
+          addSparks(30);
+          showSpeechBubble("Adventure logs updated! ✨ +30 Sparks");
+          document.getElementById('adventure-desc').textContent = "Corti found a rare glowing sprout!";
+        }
+      }, 1000);
+    }
+
+    // ══════════════════════════════════════
+    // REACTION SPARKS ACCUMULATOR
+    // ══════════════════════════════════════
+    function addSparks(amount) {
+      state.sparks += amount;
+      updateUI();
+    }
+
+    function updateUI() {
+      document.getElementById('global-sparks-lbl').textContent = state.sparks;
+      document.getElementById('stat-energy').textContent = state.energy + '%';
+      document.getElementById('fill-energy').style.width = state.energy + '%';
+      document.getElementById('stat-mood').textContent = state.mood + '%';
+      document.getElementById('fill-mood').style.width = state.mood + '%';
+      document.getElementById('stat-habits-done').textContent = state.habitsWatered + '/4';
+    }
+
+    // ══════════════════════════════════════
+    // WEB AUDIO GENERATIVE SYNTHESIZER
+    // ══════════════════════════════════════
+    let audioCtx = null;
+    let rainNode = null;
+    let oceanNode = null;
+    let droneOsc = null;
+    let binauralOscL = null;
+    let binauralOscR = null;
+    let masterGain = null;
+
+    function initAudioContext() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      masterGain.connect(audioCtx.destination);
+    }
+
+    function createNoiseNode() {
+      const bufferSize = 2 * audioCtx.sampleRate;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      noise.loop = true;
+      return noise;
+    }
+
+    function toggleMixerAudio() {
+      initAudioContext();
+      const playBtn = document.getElementById('mixer-play-btn');
+
+      if (!state.soundPlaying) {
+        state.soundPlaying = true;
+        playBtn.textContent = "⏸";
+
+        // 1. Rain Synthesizer (White noise with high/low pass filters)
+        rainNode = createNoiseNode();
+        const rainFilter = audioCtx.createBiquadFilter();
+        rainFilter.type = 'bandpass';
+        rainFilter.frequency.value = 600;
+        rainFilter.Q.value = 1;
+        const rainGain = audioCtx.createGain();
+        rainGain.gain.value = document.getElementById('slide-rain').value / 200;
+
+        rainNode.connect(rainFilter);
+        rainFilter.connect(rainGain);
+        rainGain.connect(masterGain);
+        rainNode.start();
+        rainNode.gainRef = rainGain;
+
+        // 2. Ocean Waves Synth (Noise modulated by low frequency oscillator)
+        oceanNode = createNoiseNode();
+        const waveFilter = audioCtx.createBiquadFilter();
+        waveFilter.type = 'lowpass';
+        waveFilter.frequency.value = 400;
+        const waveGain = audioCtx.createGain();
+        waveGain.gain.value = document.getElementById('slide-ocean').value / 250;
+
+        // LFO to sweep filter cutoff frequency for wave swell rhythm
+        const waveLfo = audioCtx.createOscillator();
+        waveLfo.type = 'sine';
+        waveLfo.frequency.value = 0.12; // 8 second swells
+        const waveLfoGain = audioCtx.createGain();
+        waveLfoGain.gain.value = 250;
+
+        waveLfo.connect(waveLfoGain);
+        waveLfoGain.connect(waveFilter.frequency);
+        waveLfo.start();
+
+        oceanNode.connect(waveFilter);
+        waveFilter.connect(waveGain);
+        waveGain.connect(masterGain);
+        oceanNode.start();
+        oceanNode.gainRef = waveGain;
+        oceanNode.lfoRef = waveLfo;
+
+        // 3. Ambient Lo-fi Drone Osc
+        droneOsc = audioCtx.createOscillator();
+        droneOsc.type = 'triangle';
+        droneOsc.frequency.value = 110; // A2 note
+        const droneFilter = audioCtx.createBiquadFilter();
+        droneFilter.type = 'lowpass';
+        droneFilter.frequency.value = 200;
+        const droneGain = audioCtx.createGain();
+        droneGain.gain.value = document.getElementById('slide-lofi').value / 300;
+
+        droneOsc.connect(droneFilter);
+        droneFilter.connect(droneGain);
+        droneGain.connect(masterGain);
+        droneOsc.start();
+        droneOsc.gainRef = droneGain;
+
+        // 4. Binaural Beats Synth (detuned stereo oscillators L/R)
+        binauralOscL = audioCtx.createOscillator();
+        binauralOscL.frequency.value = 140; // 140 Hz
+        const pannerL = audioCtx.createStereoPanner();
+        pannerL.pan.value = -1;
+        const gainL = audioCtx.createGain();
+
+        binauralOscR = audioCtx.createOscillator();
+        binauralOscR.frequency.value = 146; // 146 Hz (detuned delta wave beat)
+        const pannerR = audioCtx.createStereoPanner();
+        pannerR.pan.value = 1;
+        const gainR = audioCtx.createGain();
+
+        const binGain = document.getElementById('slide-binaural').value / 400;
+        gainL.gain.value = binGain;
+        gainR.gain.value = binGain;
+
+        binauralOscL.connect(pannerL).connect(gainL).connect(masterGain);
+        binauralOscR.connect(pannerR).connect(gainR).connect(masterGain);
+        binauralOscL.start();
+        binauralOscR.start();
+
+        binauralOscL.gainRef = gainL;
+        binauralOscR.gainRef = gainR;
+
+        // Visualizer kickstart
+        animateCanvasWave();
+      } else {
+        state.soundPlaying = false;
+        playBtn.textContent = "▶";
+        stopSynthSounds();
+      }
+    }
+
+    function updateMixerVolume() {
+      if (!state.soundPlaying || !audioCtx) return;
+      rainNode.gainRef.gain.setValueAtTime(document.getElementById('slide-rain').value / 200, audioCtx.currentTime);
+      oceanNode.gainRef.gain.setValueAtTime(document.getElementById('slide-ocean').value / 250, audioCtx.currentTime);
+      droneOsc.gainRef.gain.setValueAtTime(document.getElementById('slide-lofi').value / 300, audioCtx.currentTime);
+
+      const binVal = document.getElementById('slide-binaural').value / 400;
+      binauralOscL.gainRef.gain.setValueAtTime(binVal, audioCtx.currentTime);
+      binauralOscR.gainRef.gain.setValueAtTime(binVal, audioCtx.currentTime);
+    }
+
+    function stopSynthSounds() {
+      if (rainNode) { try { rainNode.stop(); } catch (e) { } }
+      if (oceanNode) { try { oceanNode.stop(); oceanNode.lfoRef.stop(); } catch (e) { } }
+      if (droneOsc) { try { droneOsc.stop(); } catch (e) { } }
+      if (binauralOscL) { try { binauralOscL.stop(); binauralOscR.stop(); } catch (e) { } }
+    }
+
+    // ══════════════════════════════════════
+    // CANVAS SINE WAVE VISUALIZER
+    // ══════════════════════════════════════
+    let waveOffset = 0;
+    function animateCanvasWave() {
+      if (!state.soundPlaying) return;
+      const canvas = document.getElementById('ambient-waves-canvas');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.lineWidth = 2;
+
+      // Calculate speed based on master sound intensity sliders
+      const totalIntensity = (
+        parseFloat(document.getElementById('slide-rain').value) +
+        parseFloat(document.getElementById('slide-ocean').value) +
+        parseFloat(document.getElementById('slide-lofi').value)
+      ) / 300;
+
+      waveOffset += 0.05 + (totalIntensity * 0.1);
+
+      // Draw neon wave line
+      ctx.beginPath();
+      const grad = ctx.createLinearGradient(0, 0, width, 0);
+      grad.addColorStop(0, '#80deea');
+      grad.addColorStop(0.5, '#b39ddb');
+      grad.addColorStop(1, '#ff8fb1');
+      ctx.strokeStyle = grad;
+
+      for (let x = 0; x < width; x++) {
+        const angle = (x / width) * Math.PI * 4 + waveOffset;
+        const amplitude = 5 + (totalIntensity * 12);
+        const y = (height / 2) + Math.sin(angle) * amplitude;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      requestAnimationFrame(animateCanvasWave);
+    }
+
+    // ══════════════════════════════════════
+    // BOX BREATHING TIMING SYSTEM
+    // ══════════════════════════════════════
+    let breatheInterval = null;
+    let breatheActive = false;
+    let breathePhase = 0; // 0: inhale, 1: hold, 2: exhale, 3: hold
+
+    document.getElementById('breathe-assist-circle').addEventListener('click', () => {
+      const circle = document.getElementById('breathe-assist-circle');
+      const label = document.getElementById('breathe-status-lbl');
+
+      if (breatheActive) {
+        clearInterval(breatheInterval);
+        breatheActive = false;
+        circle.classList.remove('breathe-expand');
+        circle.textContent = "Start";
+        label.textContent = "Tap below to start breathing";
+        setMascotExpression('happy');
+        return;
+      }
+
+      breatheActive = true;
+      breathePhase = 0;
+      runBreatheCycle();
+      breatheInterval = setInterval(runBreatheCycle, 4000);
+    });
+
+    function runBreatheCycle() {
+      const circle = document.getElementById('breathe-assist-circle');
+      const label = document.getElementById('breathe-status-lbl');
+
+      if (breathePhase === 0) {
+        circle.classList.add('breathe-expand');
+        circle.textContent = "Breathe In";
+        label.textContent = "Inhale slowly (4s)...";
+        setMascotExpression('celebrating');
+        breathePhase = 1;
+      } else if (breathePhase === 1) {
+        circle.textContent = "Hold";
+        label.textContent = "Hold your lungs full (4s)...";
+        setMascotExpression('focus');
+        breathePhase = 2;
+      } else if (breathePhase === 2) {
+        circle.classList.remove('breathe-expand');
+        circle.textContent = "Breathe Out";
+        label.textContent = "Exhale slowly (4s)...";
+        setMascotExpression('sleepy');
+        breathePhase = 3;
+      } else {
+        circle.textContent = "Hold";
+        label.textContent = "Hold your lungs empty (4s)...";
+        setMascotExpression('foggy');
+        breathePhase = 0;
+      }
+    }
+
+    function startGrounding() {
+      const items = [
+        "👀 Name 5 things you can SEE around you.",
+        "🫱 Name 4 things you can TOUCH physically.",
+        "👂 Name 3 things you can HEAR right now.",
+        "👃 Name 2 things you can SMELL.",
+        "👅 Name 1 thing you can TASTE."
+      ];
+      let step = 0;
+      const txt = document.getElementById('grounding-text');
+      txt.textContent = items[0];
+
+      const groundInterval = setInterval(() => {
+        step++;
+        if (step < 5) {
+          txt.textContent = items[step];
+        } else {
+          clearInterval(groundInterval);
+          txt.textContent = "Grounding reset complete! ✨ +15 Sparks";
+          addSparks(15);
+          setTimeout(() => {
+            txt.textContent = "Click here to begin 5-4-3-2-1 reset guide.";
+          }, 3000);
+        }
+      }, 4000);
+    }
+
+    // ══════════════════════════════════════
+    // POMODORO FOCUS TIMER SYSTEM
+    // ══════════════════════════════════════
+    let timerMins = 25;
+    let timerSecs = 0;
+    let timerInterval = null;
+    let timerRunning = false;
+    let totalOffset = 502; // stroke-dasharray
+
+    function updateTimerDisplay() {
+      const clock = document.getElementById('timer-clock-text');
+      clock.textContent = `${timerMins < 10 ? '0' : ''}${timerMins}:${timerSecs < 10 ? '0' : ''}${timerSecs}`;
+
+      // Update SVG radial ring offset
+      const percentage = (timerMins * 60 + timerSecs) / (25 * 60);
+      const circleOffset = percentage * totalOffset;
+      document.getElementById('timer-ring-circle').style.strokeDashoffset = totalOffset - circleOffset;
+    }
+
+    function toggleFocusTimer() {
+      const playBtn = document.getElementById('focus-play-btn');
+      const desk = document.getElementById('coworking-desk-area');
+      const label = document.getElementById('cowork-lbl');
+
+      if (timerRunning) {
+        // Paused flow: Check if challenge lockout is checked
+        if (document.getElementById('challenge-lockout-toggle').checked) {
+          triggerAlarmSimulation();
+          return;
+        }
+        timerRunning = false;
+        playBtn.textContent = "▶";
+        desk.classList.remove('typing');
+        label.textContent = "Corti is paused and resting";
+        setMascotExpression('happy');
+        clearInterval(timerInterval);
+      } else {
+        timerRunning = true;
+        playBtn.textContent = "⏸";
+        desk.classList.add('typing');
+        label.textContent = "Corti is typing furiously alongside you!";
+        setMascotExpression('focus');
+
+        timerInterval = setInterval(() => {
+          if (timerSecs === 0) {
+            if (timerMins === 0) {
+              // Completed!
+              clearInterval(timerInterval);
+              timerRunning = false;
+              playBtn.textContent = "▶";
+              desk.classList.remove('typing');
+              label.textContent = "Focus session completed! Great job!";
+              setMascotExpression('celebrating');
+              addSparks(30);
+              showSpeechBubble("You did it! Focus completed! 🏆");
+              state.focusTimeToday += 25;
+              document.getElementById('stat-focus-time').textContent = Math.floor(state.focusTimeToday / 60) + 'h ' + (state.focusTimeToday % 60) + 'm';
+              return;
+            }
+            timerMins--;
+            timerSecs = 59;
+          } else {
+            timerSecs--;
+          }
+          updateTimerDisplay();
+        }, 1000);
+      }
+    }
+
+    function resetFocusTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerMins = 25;
+      timerSecs = 0;
+      document.getElementById('focus-play-btn').textContent = "▶";
+      document.getElementById('coworking-desk-area').classList.remove('typing');
+      setMascotExpression('happy');
+      updateTimerDisplay();
+    }
+
+    function skipFocusTimer() {
+      timerMins = 0;
+      timerSecs = 5;
+      updateTimerDisplay();
+    }
+
+    // ══════════════════════════════════════
+    // WAKE SMART ALARM Sleepy SIMULATOR
+    // ══════════════════════════════════════
+    function triggerAlarmSimulation() {
+      state.alarmActive = true;
+      state.alarmType = document.getElementById('alarm-challenge-type').value;
+      document.getElementById('alarm-sim-overlay').style.display = 'flex';
+      setMascotExpression('foggy');
+
+      // Start Synth warning sound
+      playSynthAlarmBeep();
+
+      if (state.alarmType === 'math') {
+        state.alarmMathStep = 1;
+        document.getElementById('math-challenge-box').style.display = 'block';
+        document.getElementById('shake-challenge-box').style.display = 'none';
+        generateMathRiddle();
+      } else {
+        state.alarmShakeCount = 0;
+        document.getElementById('math-challenge-box').style.display = 'none';
+        document.getElementById('shake-challenge-box').style.display = 'block';
+        document.getElementById('shake-challenge-count').textContent = "0 of 15 shakes";
+        document.getElementById('shake-fill').style.width = '0%';
+      }
+    }
+
+    let alarmAudioInterval = null;
+    function playSynthAlarmBeep() {
+      initAudioContext();
+      alarmAudioInterval = setInterval(() => {
+        if (!state.alarmActive) {
+          clearInterval(alarmAudioInterval);
+          return;
+        }
+        // Synthesize double alarm beeps
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.connect(gain).connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      }, 600);
+    }
+
+    function generateMathRiddle() {
+      const a = Math.floor(Math.random() * 12) + 6;
+      const b = Math.floor(Math.random() * 12) + 5;
+      state.alarmMathAnswer = a + b;
+      document.getElementById('math-equation-text').textContent = `${a} + ${b}`;
+      document.getElementById('math-challenge-answer').value = '';
+      document.getElementById('math-challenge-answer').focus();
+    }
+
+    function checkMathChallenge() {
+      const userVal = parseInt(document.getElementById('math-challenge-answer').value);
+      if (userVal === state.alarmMathAnswer) {
+        state.alarmMathStep++;
+        if (state.alarmMathStep > 3) {
+          // Solved challenge
+          dismissAlarmChallenge();
+        } else {
+          document.getElementById('math-challenge-count').textContent = `Riddle ${state.alarmMathStep} of 3`;
+          generateMathRiddle();
+        }
+      }
+    }
+
+    function simulateDeviceShake() {
+      state.alarmShakeCount++;
+      document.getElementById('shake-challenge-count').textContent = `${state.alarmShakeCount} of 15 shakes`;
+      const fillPercentage = (state.alarmShakeCount / 15) * 100;
+      document.getElementById('shake-fill').style.width = fillPercentage + '%';
+
+      // Synth click sound
+      initAudioContext();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.06);
+
+      if (state.alarmShakeCount >= 15) {
+        dismissAlarmChallenge();
+      }
+    }
+
+    function dismissAlarmChallenge() {
+      state.alarmActive = false;
+      clearInterval(alarmAudioInterval);
+      document.getElementById('alarm-sim-overlay').style.display = 'none';
+      setMascotExpression('celebrating');
+      addSparks(25);
+      showSpeechBubble("Alarm challenge completed! +25 Sparks");
+
+      // Auto restore lockout timer if we bypassed lockout
+      if (timerRunning) {
+        timerRunning = false;
+        document.getElementById('focus-play-btn').textContent = "▶";
+        document.getElementById('coworking-desk-area').classList.remove('typing');
+        document.getElementById('cowork-lbl').textContent = "Corti is paused and resting";
+        setMascotExpression('happy');
+        clearInterval(timerInterval);
+      }
+    }
+
+    // Check wind-down checklist item
+    function toggleCheckItem(el) {
+      el.classList.toggle('done');
+      const box = el.querySelector('.check-box');
+      box.textContent = el.classList.contains('done') ? '✓' : '';
+
+      setMascotExpression('celebrating');
+      addSparks(5);
+      setTimeout(() => {
+        setMascotExpression('sleepy');
+      }, 1000);
+    }
+
+    // ══════════════════════════════════════
+    // GARDEN WATERING SYSTEM
+    // ══════════════════════════════════════
+    function waterPlot(plotId, seedEmoji, plantEmoji) {
+      const plot = document.getElementById(plotId);
+      const isWatered = plot.classList.contains('watered');
+
+      if (isWatered) return; // already bloomed
+
+      // Animation triggers
+      const wateringCan = plot.querySelector('.watering-can-fx');
+      wateringCan.classList.add('pour');
+
+      setTimeout(() => {
+        wateringCan.classList.remove('pour');
+        plot.classList.add('watered');
+        plot.querySelector('.plot-status-dot').textContent = '✓';
+
+        // Seed blooms into flower
+        const plantElement = plot.querySelector('.plot-plant-visual');
+        plantElement.textContent = plantEmoji;
+        plantElement.style.transform = 'scale(1.3)';
+        setTimeout(() => { plantElement.style.transform = ''; }, 400);
+
+        state.habitsWatered++;
+        addSparks(15);
+        showSpeechBubble("Habit watered! Plant bloomed! 🌱✨");
+      }, 1000);
+    }
+
+    // Custom Tasks List
+    function renderTodos() {
+      const list = document.getElementById('todo-items-list');
+      list.innerHTML = '';
+
+      state.todoTasks.forEach(task => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `todo-item ${task.done ? 'completed' : ''}`;
+        itemDiv.innerHTML = `
+          <div class="todo-item-check" onclick="checkTodoTask(${task.id})">
+            <span style="font-weight:bold; color:var(--green);">${task.done ? '✓' : '○'}</span>
+            <span>${task.text}</span>
+          </div>
+          <button class="todo-delete" onclick="deleteTodoTask(${task.id})">✕</button>
+        `;
+        list.appendChild(itemDiv);
+      });
+    }
+
+    function addNewTodo() {
+      const input = document.getElementById('new-todo-text');
+      const val = input.value.trim();
+      if (!val) return;
+
+      state.todoTasks.push({
+        id: Date.now(),
+        text: val,
+        done: false
+      });
+      input.value = '';
+      renderTodos();
+    }
+
+    function checkTodoTask(id) {
+      const task = state.todoTasks.find(t => t.id === id);
+      if (task) {
+        task.done = !task.done;
+        if (task.done) addSparks(10);
+        renderTodos();
+      }
+    }
+
+    function deleteTodoTask(id) {
+      state.todoTasks = state.todoTasks.filter(t => t.id !== id);
+      renderTodos();
+    }
+
+    // ══════════════════════════════════════
+    // ACCESSORY CUSTOMIZATION SHOP
+    // ══════════════════════════════════════
+    function openShop() {
+      document.getElementById('shop-catalog-modal').style.display = 'flex';
+      renderShopCatalog();
+    }
+
+    function closeShop() {
+      document.getElementById('shop-catalog-modal').style.display = 'none';
+    }
+
+    function renderShopCatalog() {
+      const grid = document.getElementById('shop-grid-items');
+      grid.innerHTML = '';
+
+      accessoriesCatalog.forEach(item => {
+        const isPurchased = state.purchasedAccessories.includes(item.id);
+        const isEquipped = state.equippedAccessories.includes(item.id);
+
+        let actionBtnHTML = '';
+        if (isEquipped) {
+          actionBtnHTML = `<button class="shop-buy-btn equipped" onclick="toggleEquipGear('${item.id}')">Equipped</button>`;
+        } else if (isPurchased) {
+          actionBtnHTML = `<button class="shop-buy-btn purchased" onclick="toggleEquipGear('${item.id}')">Equip Gear</button>`;
+        } else {
+          actionBtnHTML = `<button class="shop-buy-btn" onclick="buyGear('${item.id}', ${item.price})">Buy for ✨${item.price}</button>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'shop-card';
+        card.innerHTML = `
+          <div class="shop-item-icon">${item.icon}</div>
+          <div class="shop-item-name">${item.name}</div>
+          <div class="shop-item-price">${isPurchased ? 'Owned' : '✨ ' + item.price}</div>
+          ${actionBtnHTML}
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function buyGear(id, price) {
+      if (state.sparks < price) {
+        alert("You do not have enough Dopamine Sparks! Complete more habits or focus sessions.");
+        return;
+      }
+      state.sparks -= price;
+      state.purchasedAccessories.push(id);
+      toggleEquipGear(id); // auto equip
+      renderShopCatalog();
+      updateUI();
+    }
+
+    function toggleEquipGear(id) {
+      const idx = state.equippedAccessories.indexOf(id);
+      if (idx > -1) {
+        state.equippedAccessories.splice(idx, 1);
+        // Hide SVG layer
+        document.querySelector(`.corti-acc-${id}`).style.display = 'none';
+      } else {
+        state.equippedAccessories.push(id);
+        // Show SVG layer
+        document.querySelector(`.corti-acc-${id}`).style.display = 'block';
+      }
+      renderShopCatalog();
+    }
+
+    // ══════════════════════════════════════
+    // INITIALIZATION AND AMBIENT PARTICLES
+    // ══════════════════════════════════════
+    (function init() {
+      // Particles setup
+      const container = document.getElementById('particles');
+      const colors = ['rgba(255,158,121,0.25)', 'rgba(179,157,219,0.25)', 'rgba(128,222,234,0.18)', 'rgba(128,203,196,0.18)'];
+      for (let i = 0; i < 22; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = Math.random() * 3 + 1.5;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.animationDuration = (Math.random() * 12 + 10) + 's';
+        p.style.animationDelay = (Math.random() * 8) + 's';
+        container.appendChild(p);
+      }
+
+      // Initial layouts render
+      renderTodos();
+      updateTimerDisplay();
+      updateUI();
+
+      // Equip default purchased item
+      toggleEquipGear('sunglasses');
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, Share, Linking } from 'react-native';
+import React, { useRef } from 'react';
+import { ScrollView, Share, Linking, PanResponder } from 'react-native';
 import styled from 'styled-components/native';
 import { X, ChevronRight, Settings, Bell, Palette, Archive, Download, ArrowUpDown, HelpCircle, Eye, Mail, Globe, Lock, Star, Sparkles } from 'lucide-react-native';
 import { useAppDispatch } from '../store';
@@ -18,29 +18,50 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ onClose }) => {
   };
 
   const handleFeedback = () => {
-    Linking.openURL('mailto:support@dopamind.app?subject=Dopamind Feedback');
+    Linking.openURL('mailto:support@iMaxx.app?subject=iMaxx Feedback');
   };
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: 'Master your ADHD flow with Dopamind soundscapes and nano habit trackers!',
-        url: 'https://dopamind.app',
+        message: 'Master your ADHD flow with iMaxx soundscapes and nano habit trackers!',
+        url: 'https://iMaxx.app',
       });
     } catch (error) {
       console.log(error);
     }
   };
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const { dy, dx } = gestureState;
+        // Respond to intentional downward swipes
+        return dy > 45 && Math.abs(dx) < 30;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dy } = gestureState;
+        if (dy > 90) {
+          onClose();
+        }
+      },
+    })
+  ).current;
+
   return (
     <Container>
-      <HeaderRow>
-        <CloseButton onPress={onClose}>
-          <X size={22} color="#FFFFFF" />
-        </CloseButton>
-        <HeaderTitle>Settings</HeaderTitle>
-        <Placeholder />
-      </HeaderRow>
+      <HeaderWrapper {...panResponder.panHandlers}>
+        <GestureIndicatorContainer>
+          <GestureIndicatorBar />
+        </GestureIndicatorContainer>
+        <HeaderRow>
+          <Placeholder />
+          <HeaderTitle>Settings</HeaderTitle>
+          <CloseButton onPress={onClose}>
+            <X size={22} color="#FFFFFF" />
+          </CloseButton>
+        </HeaderRow>
+      </HeaderWrapper>
 
       <ScrollContent showsVerticalScrollIndicator={false}>
         {/* Premium Upgrade Card */}
@@ -50,7 +71,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ onClose }) => {
               <Star size={16} color="#08080A" fill="#08080A" />
             </ProIconGrid>
             <ProTextWrapper>
-              <ProTitle>Subscribe to Dopamind Pro</ProTitle>
+              <ProTitle>Subscribe to iMaxx Pro</ProTitle>
               <ProDesc>Unlimited habits, offline loops, custom widget themes</ProDesc>
             </ProTextWrapper>
           </ProCardLeft>
@@ -163,12 +184,12 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ onClose }) => {
               <IconBox color="#38EF7D">
                 <Sparkles size={16} color="#FFFFFF" />
               </IconBox>
-              <RowLabel>Share Dopamind App</RowLabel>
+              <RowLabel>Share iMaxx App</RowLabel>
             </RowLeft>
             <ChevronRight size={16} color="#6B6280" />
           </SettingsRow>
 
-          <SettingsRow border onPress={() => Linking.openURL('https://dopamind.app')}>
+          <SettingsRow border onPress={() => Linking.openURL('https://iMaxx.app')}>
             <RowLeft>
               <IconBox color="#9B7EDE">
                 <Globe size={16} color="#FFFFFF" />
@@ -178,7 +199,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ onClose }) => {
             <ChevronRight size={16} color="#6B6280" />
           </SettingsRow>
 
-          <SettingsRow onPress={() => Linking.openURL('https://dopamind.app/privacy')}>
+          <SettingsRow onPress={() => Linking.openURL('https://iMaxx.app/privacy')}>
             <RowLeft>
               <IconBox color="#6B6280">
                 <Lock size={16} color="#FFFFFF" />
@@ -189,7 +210,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({ onClose }) => {
           </SettingsRow>
         </SettingsGroupCard>
 
-        <FooterText>Dopamind v1.0.0 (iOS 26+ Build)</FooterText>
+        <FooterText>iMaxx v1.0.0 (iOS 26+ Build)</FooterText>
         <ExtraSpacing />
       </ScrollContent>
     </Container>
@@ -337,4 +358,25 @@ const FooterText = styled.Text`
 
 const ExtraSpacing = styled.View`
   height: 60px;
+`;
+
+const GestureIndicatorContainer = styled.View`
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding-top: 10px;
+  padding-bottom: 5px;
+  background-color: transparent;
+`;
+
+const GestureIndicatorBar = styled.View`
+  width: 40px;
+  height: 5px;
+  border-radius: 2.5px;
+  background-color: rgba(255, 255, 255, 0.2);
+`;
+
+const HeaderWrapper = styled.View`
+  background-color: transparent;
+  width: 100%;
 `;

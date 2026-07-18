@@ -28,7 +28,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onOpenSettings,
 }) => {
   const dispatch = useAppDispatch();
-  
+
   // Redux store states
   const habits = useAppSelector((state) => state.habits.habits);
   const { isPlaying, timerIsActive, timerTimeLeft, timerDuration, activeSoundscape, completedPomodorosCount, totalFocusSeconds } = useAppSelector((state) => state.audio);
@@ -88,9 +88,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <LogoIconGlow style={{ marginLeft: 4 }}>
             <Compass size={18} color="#FF7E47" />
           </LogoIconGlow>
-          <LogoText>DOPAMIND</LogoText>
+          <LogoText>iMaxx</LogoText>
         </LogoArea>
-        
+
         <HeaderActions>
           <PaywallBadge onPress={onOpenPaywall}>
             <Star size={10} color="#FF7E47" fill="#FF7E47" style={{ marginRight: 4 }} />
@@ -103,7 +103,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       </HeaderBar>
 
       <ScrollContent showsVerticalScrollIndicator={false}>
-        
+
         {/* Expenses-style Radial Focus Timer Card (cloned from expenses ring in Image 1) */}
         <SectionTitle>ADHD Focus Dial</SectionTitle>
         <TimerDialCard>
@@ -142,16 +142,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   transform={`rotate(-90 ${radius + strokeWidth} ${radius + strokeWidth})`}
                 />
 
-                {/* Indicator White Dot Cursor at the tip */}
                 {timerIsActive && (
                   <Circle
                     cx={cx}
                     cy={cy}
                     r={5}
                     fill="#FFFFFF"
-                    shadowColor="#00F2FE"
-                    shadowOpacity={0.8}
-                    shadowRadius={4}
                   />
                 )}
               </Svg>
@@ -296,12 +292,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <WidgetStatLabel>Total Pomodoros</WidgetStatLabel>
               <WidgetStatValue>🍅 {completedPomodorosCount}</WidgetStatValue>
             </WidgetStatBox>
-            
+
             <WidgetStatBox>
               <WidgetStatLabel>Total Focus Hours</WidgetStatLabel>
               <WidgetStatValue>{Math.floor(totalFocusSeconds / 3600)}h</WidgetStatValue>
             </WidgetStatBox>
-            
+
             <WidgetStatBox>
               <WidgetStatLabel>Daily Average</WidgetStatLabel>
               <WidgetStatValue>6h 12m</WidgetStatValue>
@@ -312,7 +308,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
         {/* Quick Micro-Habits Checker */}
         <SectionTitleRow>
-          <SectionTitle>Micro Habits</SectionTitle>
+          <SectionTitle>Micro Habits & Goals</SectionTitle>
         </SectionTitleRow>
 
         <HabitsRow>
@@ -677,12 +673,12 @@ const WidgetNameText = styled.Text`
   margin-top: 4px;
 `;
 
-// Micro Habits checkoff layout
+// Micro  Habits & Goals checkoff layout
 const HabitsRow = styled.View`
   margin-bottom: 20px;
 `;
 
-const HabitCheckRow = styled(GlassCard)<{ completed: boolean }>`
+const HabitCheckRow = styled(GlassCard) <{ completed: boolean }>`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
