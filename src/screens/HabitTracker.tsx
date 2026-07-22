@@ -9,6 +9,7 @@ import { HabitGrid } from '../components/HabitGrid';
 import { GlassCard } from '../components/GlassCard';
 import { theme } from '../theme/colors';
 import Svg, { Circle } from 'react-native-svg';
+import { getLocalDateStr } from '../utils/date';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -205,7 +206,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) =>
     for (let i = 4; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = getLocalDateStr(d);
       result.push({
         dateStr,
         dayName: daysLabel[d.getDay()],
@@ -237,7 +238,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) =>
           let checkDate = new Date(dateStr);
           for (let j = idx - 1; j >= 0; j--) {
             checkDate.setDate(checkDate.getDate() - 1);
-            const checkDateStr = checkDate.toISOString().split('T')[0];
+            const checkDateStr = getLocalDateStr(checkDate);
             if (sortedComps[j] === checkDateStr) {
               streak += 1;
             } else {

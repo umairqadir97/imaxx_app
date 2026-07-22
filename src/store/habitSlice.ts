@@ -223,6 +223,8 @@ const initialState: HabitState = {
   habitsSubTab: 'tasks',
 };
 
+import { getLocalDateStr } from '../utils/date';
+
 // Helper function to calculate streaks based on completions array
 const calculateStreak = (completions: string[]): number => {
   if (completions.length === 0) return 0;
@@ -232,17 +234,20 @@ const calculateStreak = (completions: string[]): number => {
   const sorted = [...uniqueDates].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   
   let streak = 0;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const yesterdayStr = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const todayStr = getLocalDateStr();
+  
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = getLocalDateStr(yesterday);
   
   if (!sorted.includes(todayStr) && !sorted.includes(yesterdayStr)) {
     return 0;
   }
 
-  let expectedDate = sorted.includes(todayStr) ? new Date() : new Date(Date.now() - 24 * 60 * 60 * 1000);
+  let expectedDate = sorted.includes(todayStr) ? new Date() : yesterday;
   
   for (let i = 0; i < sorted.length; i++) {
-    const expStr = expectedDate.toISOString().split('T')[0];
+    const expStr = getLocalDateStr(expectedDate);
     if (sorted.includes(expStr)) {
       streak++;
       expectedDate.setDate(expectedDate.getDate() - 1);
@@ -262,7 +267,7 @@ const habitSlice = createSlice({
       const newHabit: Habit = {
         ...action.payload,
         id: `habit_${Date.now()}`,
-        createdDate: new Date().toISOString().split('T')[0],
+        createdDate: getLocalDateStr(),
         completions: [],
         streakCount: 0,
         maxStreak: 0,

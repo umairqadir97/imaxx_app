@@ -951,25 +951,11 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   const [editHourInputStr, setEditHourInputStr] = useState('7');
   const [editMinuteInputStr, setEditMinuteInputStr] = useState('30');
 
-  // Sync alarmHour to hourInputStr
+  // Initialize picker inputs on mount
   useEffect(() => {
     setHourInputStr(alarmHour.toString());
-  }, [alarmHour]);
-
-  // Sync alarmMinute to minuteInputStr
-  useEffect(() => {
     setMinuteInputStr(alarmMinute < 10 ? `0${alarmMinute}` : alarmMinute.toString());
-  }, [alarmMinute]);
-
-  // Sync editHour to editHourInputStr
-  useEffect(() => {
-    setEditHourInputStr(editHour.toString());
-  }, [editHour]);
-
-  // Sync editMinute to editMinuteInputStr
-  useEffect(() => {
-    setEditMinuteInputStr(editMinute < 10 ? `0${editMinute}` : editMinute.toString());
-  }, [editMinute]);
+  }, []);
 
   const scheduleNextAlarmNotification = async (list: AlarmItem[]) => {
     if (Platform.OS === 'web') return;
@@ -1062,6 +1048,8 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
     setEditType(alarm.type);
     setEditShakeDuration(alarm.shakeDuration);
     setEditIsSmart(alarm.isSmart);
+    setEditHourInputStr(alarm.hour.toString());
+    setEditMinuteInputStr(alarm.minute < 10 ? `0${alarm.minute}` : alarm.minute.toString());
     setShowEditAlarmModal(true);
   };
 
@@ -1073,6 +1061,8 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
     setEditType('daily');
     setEditShakeDuration(30);
     setEditIsSmart(true);
+    setEditHourInputStr('7');
+    setEditMinuteInputStr('30');
     setShowEditAlarmModal(true);
   };
 
@@ -1265,10 +1255,26 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   };
 
   // Adjust picker time handlers
-  const incrementHour = () => setAlarmHour((prev) => (prev === 12 ? 1 : prev + 1));
-  const decrementHour = () => setAlarmHour((prev) => (prev === 1 ? 12 : prev - 1));
-  const incrementMinute = () => setAlarmMinute((prev) => (prev === 55 ? 0 : prev + 5));
-  const decrementMinute = () => setAlarmMinute((prev) => (prev === 0 ? 55 : prev - 5));
+  const incrementHour = () => setAlarmHour((prev) => {
+    const next = prev === 12 ? 1 : prev + 1;
+    setHourInputStr(next.toString());
+    return next;
+  });
+  const decrementHour = () => setAlarmHour((prev) => {
+    const next = prev === 1 ? 12 : prev - 1;
+    setHourInputStr(next.toString());
+    return next;
+  });
+  const incrementMinute = () => setAlarmMinute((prev) => {
+    const next = prev === 55 ? 0 : prev + 5;
+    setMinuteInputStr(next < 10 ? `0${next}` : next.toString());
+    return next;
+  });
+  const decrementMinute = () => setAlarmMinute((prev) => {
+    const next = prev === 0 ? 55 : prev - 5;
+    setMinuteInputStr(next < 10 ? `0${next}` : next.toString());
+    return next;
+  });
 
   const prevHour = alarmHour === 1 ? 12 : alarmHour - 1;
   const nextHour = alarmHour === 12 ? 1 : alarmHour + 1;
@@ -2315,7 +2321,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
                 {/* Hour */}
                 <View style={{ alignItems: 'center' }}>
                   <Text style={{ color: '#8E8E93', fontSize: 11, fontWeight: '700', marginBottom: 6 }}>HOUR</Text>
-                  <TouchableOpacity onPress={() => setEditHour(h => h === 12 ? 1 : h + 1)} style={{ padding: 12 }}>
+                  <TouchableOpacity onPress={() => setEditHour(h => { const next = h === 12 ? 1 : h + 1; setEditHourInputStr(next.toString()); return next; })} style={{ padding: 12 }}>
                     <Text style={{ color: '#FFFFFF', fontSize: 32 }}>▲</Text>
                   </TouchableOpacity>
                   <TextInput
@@ -2342,7 +2348,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
                     }}
                     style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '700', textAlign: 'center', width: 60, padding: 4 }}
                   />
-                  <TouchableOpacity onPress={() => setEditHour(h => h === 1 ? 12 : h - 1)} style={{ padding: 12 }}>
+                  <TouchableOpacity onPress={() => setEditHour(h => { const next = h === 1 ? 12 : h - 1; setEditHourInputStr(next.toString()); return next; })} style={{ padding: 12 }}>
                     <Text style={{ color: '#FFFFFF', fontSize: 32 }}>▼</Text>
                   </TouchableOpacity>
                 </View>
@@ -2350,7 +2356,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
                 {/* Minute */}
                 <View style={{ alignItems: 'center' }}>
                   <Text style={{ color: '#8E8E93', fontSize: 11, fontWeight: '700', marginBottom: 6 }}>MINUTE</Text>
-                  <TouchableOpacity onPress={() => setEditMinute(m => m >= 55 ? 0 : m + 5)} style={{ padding: 12 }}>
+                  <TouchableOpacity onPress={() => setEditMinute(m => { const next = m >= 55 ? 0 : m + 5; setEditMinuteInputStr(next < 10 ? '0' + next : next.toString()); return next; })} style={{ padding: 12 }}>
                     <Text style={{ color: '#FFFFFF', fontSize: 32 }}>▲</Text>
                   </TouchableOpacity>
                   <TextInput
@@ -2379,7 +2385,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
                     }}
                     style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '700', textAlign: 'center', width: 60, padding: 4 }}
                   />
-                  <TouchableOpacity onPress={() => setEditMinute(m => m <= 0 ? 55 : m - 5)} style={{ padding: 12 }}>
+                  <TouchableOpacity onPress={() => setEditMinute(m => { const next = m <= 0 ? 55 : m - 5; setEditMinuteInputStr(next < 10 ? '0' + next : next.toString()); return next; })} style={{ padding: 12 }}>
                     <Text style={{ color: '#FFFFFF', fontSize: 32 }}>▼</Text>
                   </TouchableOpacity>
                 </View>

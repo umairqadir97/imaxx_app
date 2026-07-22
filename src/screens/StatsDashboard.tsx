@@ -6,6 +6,8 @@ import { resetOnboarding } from '../store/habitSlice';
 import { CircadianWidget } from '../components/CircadianWidget';
 import { GlassCard } from '../components/GlassCard';
 
+import { getLocalDateStr } from '../utils/date';
+
 interface StatsDashboardProps {
   onOpenPaywall: () => void;
 }
@@ -20,7 +22,7 @@ export const StatsDashboard: React.FC<StatsDashboardProps> = ({ onOpenPaywall })
   };
 
   const getCompletedCount = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     return habits.filter(h => h.completions.includes(todayStr)).length;
   };
 
