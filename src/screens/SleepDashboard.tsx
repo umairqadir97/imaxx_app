@@ -9,6 +9,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, w
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Accelerometer } from 'expo-sensors';
+import { createAudioPlayer } from 'expo-audio';
 
 interface AlarmItem {
   id: string;
@@ -193,34 +194,38 @@ const SmartTimePickerContainer = styled.View`
   justify-content: center;
   align-items: center;
   height: 140px;
-  margin-bottom: 20px;
+  width: 100%;
+  max-width: 320px;
+  align-self: center;
+  margin-bottom: 16px;
 `;
 
 const PickerCol = styled.View`
   align-items: center;
-  width: 60px;
+  justify-content: center;
+  width: 72px;
 `;
 
 const PickerArrow = styled.TouchableOpacity`
-  padding: 10px;
+  padding: 8px;
 `;
 
 const PickerDigit = styled.Text`
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.25);
   font-size: 16px;
   font-weight: 500;
 `;
 
 const PickerActiveDigitBox = styled.View`
-  background-color: rgba(255, 255, 255, 0.06);
-  border-width: 0.8px;
-  border-color: rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: 6px 14px;
-  margin-vertical: 4px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  height: 48px;
+  width: 64px;
   justify-content: center;
   align-items: center;
-  min-width: 52px;
+  margin-vertical: 4px;
 `;
 
 const PickerActiveDigit = styled.Text`
@@ -235,15 +240,16 @@ const PickerActiveInput = styled.TextInput`
   font-weight: 700;
   text-align: center;
   padding: 0;
-  min-width: 36px;
+  width: 64px;
+  height: 48px;
 `;
 
 const ColonText = styled.Text`
   color: #FFFFFF;
   font-size: 24px;
   font-weight: bold;
-  margin-horizontal: 8px;
-  margin-bottom: 4px;
+  margin-horizontal: 4px;
+  margin-bottom: 2px;
 `;
 
 const InfoTextLine1 = styled.Text`
@@ -892,8 +898,23 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   const [alarmMinute, setAlarmMinute] = useState(30);
   const [alarmPeriod, setAlarmPeriod] = useState<'AM' | 'PM'>('AM');
 
-  // Sleepy tab mode index: 0 = No alarm, 1 = Fixed Alarm, 2 = Smart Alarm
-  const [activeModeIdx, setActiveModeIdx] = useState(2);
+  // Bedtime states for Smart Cycle Alarm
+  const [bedtimeHour, setBedtimeHour] = useState(11);
+  const [bedtimeMinute, setBedtimeMinute] = useState(0);
+  const [bedtimePeriod, setBedtimePeriod] = useState<'AM' | 'PM'>('PM');
+
+  // Alarm sound states
+  const [selectedAlarmSound, setSelectedAlarmSound] = useState<'classic_bell' | 'radar_siren' | 'gentle_chime' | 'somatic_wave' | 'custom_mp3'>('classic_bell');
+  const [customSoundUri, setCustomSoundUri] = useState<string | null>(null);
+  const [customSoundName, setCustomSoundName] = useState<string>('Custom MP3 Track');
+
+  // Audio Player Ref for Alarm Ringtone Engine
+  const alarmSoundPlayerRef = useRef<any>(null);
+  const alarmOscillatorRef = useRef<any>(null);
+  const lastShakeTimestampRef = useRef<number>(0);
+
+  // Sleepy tab mode index: 0 = Fixed Alarm, 1 = Smart Cycle Alarm
+  const [activeModeIdx, setActiveModeIdx] = useState(1);
 
   // Settings
   const [forcedWakeup, setForcedWakeup] = useState(true);
@@ -934,6 +955,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   // Snooze States
   const [snoozeCount, setSnoozeCount] = useState(0);
   const [snoozedTime, setSnoozedTime] = useState<Date | null>(null);
+  const [addedAlarmToast, setAddedAlarmToast] = useState<string | null>(null);
 
   // Edit Alarm Modal States
   const [showEditAlarmModal, setShowEditAlarmModal] = useState(false);
@@ -1174,20 +1196,8 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
         if (raw) {
           setSleepCalendarLogs(JSON.parse(raw));
         } else {
-          // Initialize baseline mock history mapping for the last 14 days
-          const baseline: Record<string, any> = {};
-          const today = new Date();
-          for (let i = 0; i < 14; i++) {
-            const d = new Date(today);
-            d.setDate(today.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            baseline[dateStr] = {
-              hours: Number((6.2 + Math.random() * 2.3).toFixed(1)),
-              quality: Math.floor(75 + Math.random() * 20),
-              snoring: Math.floor(4 + Math.random() * 16),
-              bedtime: `10:${10 + Math.floor(Math.random() * 35)} PM`
-            };
-          }
+          // Initialize empty baseline logs
+          const baseline = {};
           setSleepCalendarLogs(baseline);
           await AsyncStorage.setItem('iMaxx_sleep_calendar_logs', JSON.stringify(baseline));
         }
@@ -1266,37 +1276,37 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
     return next;
   });
   const incrementMinute = () => setAlarmMinute((prev) => {
-    const next = prev === 55 ? 0 : prev + 5;
+    const next = prev === 59 ? 0 : prev + 1;
     setMinuteInputStr(next < 10 ? `0${next}` : next.toString());
     return next;
   });
   const decrementMinute = () => setAlarmMinute((prev) => {
-    const next = prev === 0 ? 55 : prev - 5;
+    const next = prev === 0 ? 59 : prev - 1;
     setMinuteInputStr(next < 10 ? `0${next}` : next.toString());
     return next;
   });
 
   const prevHour = alarmHour === 1 ? 12 : alarmHour - 1;
   const nextHour = alarmHour === 12 ? 1 : alarmHour + 1;
-  const prevMinute = alarmMinute === 0 ? 55 : alarmMinute - 5;
-  const nextMinute = alarmMinute === 55 ? 0 : alarmMinute + 5;
+  const prevMinute = alarmMinute === 0 ? 59 : alarmMinute - 1;
+  const nextMinute = alarmMinute === 59 ? 0 : alarmMinute + 1;
 
   // -------------------------------------------------------------
   // PanResponders for dragging wheels and swiping control box
   // -------------------------------------------------------------
   const paginatorPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         return Math.abs(gestureState.dx) > 30 && Math.abs(gestureState.dy) < 15;
       },
       onPanResponderRelease: (evt, gestureState) => {
         if (gestureState.dx > 40) {
-          // Swipe right: previous mode
-          setActiveModeIdx((prev) => (prev === 0 ? 2 : prev - 1));
+          // Swipe right: toggle mode
+          setActiveModeIdx((prev) => (prev === 0 ? 1 : 0));
         } else if (gestureState.dx < -40) {
-          // Swipe left: next mode
-          setActiveModeIdx((prev) => (prev === 2 ? 0 : prev + 1));
+          // Swipe left: toggle mode
+          setActiveModeIdx((prev) => (prev === 1 ? 0 : 1));
         }
       }
     })
@@ -1305,8 +1315,10 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   const lastDYHour = useRef(0);
   const hourPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderGrant: () => {
         lastDYHour.current = 0;
       },
@@ -1326,8 +1338,10 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   const lastDYMinute = useRef(0);
   const minutePanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderGrant: () => {
         lastDYMinute.current = 0;
       },
@@ -1347,8 +1361,10 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   const lastDYPeriod = useRef(0);
   const periodPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderGrant: () => {
         lastDYPeriod.current = 0;
       },
@@ -1362,45 +1378,31 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
     })
   ).current;
 
-  // Slide tracking start
-  const handleStartTracking = async () => {
-    setIsTrackingActive(true);
-    setRemainingSeconds(shakeDuration);
-    setShakeCount(0);
-    slideX.setValue(0);
-    startTimeRef.current = Date.now();
+  // Add alarm directly from top tile to Upcoming Alarms list
+  const handleAddAlarmFromTile = () => {
+    const newAlarm: AlarmItem = {
+      id: Date.now().toString(),
+      hour: alarmHour,
+      minute: alarmMinute,
+      period: alarmPeriod,
+      type: 'daily',
+      shakeDuration: shakeDuration,
+      isEnabled: true,
+      isSmart: activeModeIdx === 1,
+    };
 
-    // If sleep soundscape is not playing, auto start it
-    if (!isPlaying) {
-      dispatch(setSoundscape('sleep'));
-      dispatch(togglePlayback());
-    }
+    const newList = [...alarmsList, newAlarm];
+    setAlarmsList(newList);
+    saveAlarms(newList);
 
-    // Schedule background native alarm notification (rings even when closed/music stopped!)
-    if (activeModeIdx !== 0 && Platform.OS !== 'web') {
-      try {
-        await Notifications.cancelAllScheduledNotificationsAsync();
-        const soonest = getSoonestAlarm(alarmsList);
-        if (soonest) {
-          console.log(`Alarm scheduled natively in ${soonest.triggerSeconds} seconds (Alarm ID: ${soonest.alarm.id}).`);
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: soonest.alarm.isSmart ? '🌅 Smart Cycle Wakeup' : '🔔 Fixed Alarm',
-              body: 'Open Dopamind to complete the Forced Shake challenge and conquer your day!',
-              sound: true,
-              vibrate: [0, 500, 200, 500],
-              data: { alarmId: soonest.alarm.id }
-            } as any,
-            trigger: {
-              seconds: soonest.triggerSeconds,
-              type: 'timeInterval',
-            } as any,
-          });
-        }
-      } catch (err) {
-        console.log('Error scheduling local notification:', err);
-      }
-    }
+    const padM = alarmMinute < 10 ? '0' : '';
+    const alarmTypeTitle = activeModeIdx === 1 ? 'Smart Cycle' : 'Fixed';
+    const toastMsg = `🔔 ${alarmTypeTitle} Alarm set for ${alarmHour}:${padM}${alarmMinute} ${alarmPeriod}`;
+    setAddedAlarmToast(toastMsg);
+
+    setTimeout(() => {
+      setAddedAlarmToast(null);
+    }, 3500);
   };
 
   // Swipe gesture for slide to stop tracking
@@ -1510,35 +1512,230 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
     return () => clearInterval(clockInterval);
   }, [isAlarmTriggered, alarmsList, snoozedTime]);
 
-  // Subscribe to Accelerometer sensor for physical device shake detection
-  useEffect(() => {
-    let subscription: any = null;
-    if (isAlarmTriggered && forcedWakeup && Platform.OS !== 'web') {
-      let lastUpdate = 0;
-      subscription = Accelerometer.addListener(accelerometerData => {
-        const now = Date.now();
-        // Limit calculation frequency for stability
-        if (now - lastUpdate > 100) {
-          const { x, y, z } = accelerometerData;
-          const force = Math.sqrt(x * x + y * y + z * z);
-          // Standard shake threshold is 1.8G (normal environment gravity is 1.0G)
-          if (force > 1.8) {
-            setShakeCount(prev => {
-              const next = prev + 1;
-              if (next >= shakeDuration) {
-                handleStopTracking();
-              }
-              return next;
-            });
+  // -------------------------------------------------------------
+  // Alarm Ringtone Audio Engine
+  // -------------------------------------------------------------
+  const startAlarmAudioRingtone = async () => {
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        if (selectedAlarmSound === 'custom_mp3' && customSoundUri) {
+          const audio = new Audio(customSoundUri);
+          audio.loop = true;
+          audio.volume = 1.0;
+          await audio.play();
+          alarmSoundPlayerRef.current = audio;
+        } else {
+          // High-decibel Web Audio API Alarm Ringtone
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            const ctx = new AudioContextClass();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            const freq = selectedAlarmSound === 'radar_siren' ? 1046 : selectedAlarmSound === 'gentle_chime' ? 523 : 880;
+            osc.type = selectedAlarmSound === 'gentle_chime' ? 'sine' : 'square';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+            gain.gain.setValueAtTime(0.9, ctx.currentTime);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+
+            alarmOscillatorRef.current = { osc, ctx, gain };
           }
-          lastUpdate = now;
         }
-      });
-      Accelerometer.setUpdateInterval(100);
+      } else {
+        try {
+          const player = createAudioPlayer(customSoundUri || 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+          player.loop = true;
+          player.volume = 1.0;
+          player.play();
+          alarmSoundPlayerRef.current = player;
+        } catch (e) {
+          console.log('Mobile alarm audio player error:', e);
+        }
+      }
+    } catch (err) {
+      console.log('Error starting alarm ringtone:', err);
+    }
+  };
+
+  const stopAlarmAudioRingtone = () => {
+    try {
+      if (alarmSoundPlayerRef.current) {
+        if (alarmSoundPlayerRef.current.pause) alarmSoundPlayerRef.current.pause();
+        if (alarmSoundPlayerRef.current.remove) alarmSoundPlayerRef.current.remove();
+        alarmSoundPlayerRef.current = null;
+      }
+      if (alarmOscillatorRef.current) {
+        if (alarmOscillatorRef.current.osc) alarmOscillatorRef.current.osc.stop();
+        if (alarmOscillatorRef.current.ctx) alarmOscillatorRef.current.ctx.close();
+        alarmOscillatorRef.current = null;
+      }
+    } catch (e) {
+      console.log('Error stopping alarm audio:', e);
+    }
+  };
+
+  // Play audio ringtone continuously when alarm triggers
+  useEffect(() => {
+    if (isAlarmTriggered) {
+      startAlarmAudioRingtone();
+    } else {
+      stopAlarmAudioRingtone();
     }
     return () => {
-      if (subscription) {
-        subscription.remove();
+      stopAlarmAudioRingtone();
+    };
+  }, [isAlarmTriggered, selectedAlarmSound, customSoundUri]);
+
+  // -------------------------------------------------------------
+  // Circadian 90-Minute Sleep Cycle Calculator
+  // -------------------------------------------------------------
+  const getCircadianAnalysis = (
+    bH: number, bM: number, bP: 'AM' | 'PM',
+    wH: number, wM: number, wP: 'AM' | 'PM'
+  ) => {
+    let bedtimeMins = bH * 60 + bM;
+    if (bP === 'PM' && bH !== 12) bedtimeMins += 12 * 60;
+    if (bP === 'AM' && bH === 12) bedtimeMins -= 12 * 60;
+
+    let wakeupMins = wH * 60 + wM;
+    if (wP === 'PM' && wH !== 12) wakeupMins += 12 * 60;
+    if (wP === 'AM' && wH === 12) wakeupMins -= 12 * 60;
+
+    if (wakeupMins <= bedtimeMins) {
+      wakeupMins += 24 * 60;
+    }
+
+    const totalSleepMins = wakeupMins - bedtimeMins;
+    const totalHours = (totalSleepMins / 60).toFixed(1);
+
+    const cycle5Mins = bedtimeMins + 5 * 90; // 7.5 hours
+    const cycle6Mins = bedtimeMins + 6 * 90; // 9.0 hours
+
+    let c5H = Math.floor((cycle5Mins % 1440) / 60);
+    const c5M = (cycle5Mins % 1440) % 60;
+    let c5P: 'AM' | 'PM' = 'AM';
+    if (c5H >= 12) {
+      c5P = 'PM';
+      if (c5H > 12) c5H -= 12;
+    } else if (c5H === 0) {
+      c5H = 12;
+    }
+
+    let c6H = Math.floor((cycle6Mins % 1440) / 60);
+    const c6M = (cycle6Mins % 1440) % 60;
+    let c6P: 'AM' | 'PM' = 'AM';
+    if (c6H >= 12) {
+      c6P = 'PM';
+      if (c6H > 12) c6H -= 12;
+    } else if (c6H === 0) {
+      c6H = 12;
+    }
+
+    const padM5 = c5M < 10 ? '0' : '';
+    const padM6 = c6M < 10 ? '0' : '';
+
+    return {
+      totalHours,
+      cycle5TimeStr: `${c5H}:${padM5}${c5M} ${c5P}`,
+      cycle6TimeStr: `${c6H}:${padM6}${c6M} ${c6P}`,
+    };
+  };
+
+  // Subscribe to Accelerometer sensor for physical device shake detection & mouse/window motion for desktop
+  useEffect(() => {
+    let subscription: any = null;
+    let mouseListener: any = null;
+    let keyListener: any = null;
+
+    if (isAlarmTriggered && forcedWakeup) {
+      // 1. Physical Phone Accelerometer (iOS & Android)
+      try {
+        subscription = Accelerometer.addListener(accelerometerData => {
+          const now = Date.now();
+          // Require at least 500ms between physical shake increments
+          if (now - lastShakeTimestampRef.current >= 500) {
+            const { x, y, z } = accelerometerData;
+            const force = Math.sqrt(x * x + y * y + z * z);
+            // Threshold 1.5G for distinct physical phone shake movements
+            if (force > 1.5) {
+              lastShakeTimestampRef.current = now;
+              setShakeCount(prev => {
+                const next = prev + 1;
+                if (next >= shakeDuration) {
+                  handleStopTracking();
+                }
+                return next;
+              });
+            }
+          }
+        });
+        Accelerometer.setUpdateInterval(100);
+      } catch (err) {
+        console.log('Accelerometer listener notice:', err);
+      }
+
+      // 2. Macbook Desktop App / Web Browser Shake Detection (Mouse Movement & Spacebar)
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        let lastX = 0;
+        let lastY = 0;
+        let lastMouseTime = 0;
+
+        mouseListener = (e: MouseEvent) => {
+          const now = Date.now();
+          if (lastMouseTime > 0) {
+            const dt = now - lastMouseTime;
+            if (dt > 30) {
+              const dx = e.clientX - lastX;
+              const dy = e.clientY - lastY;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const speed = dist / dt;
+              if (speed > 2.8 && (now - lastShakeTimestampRef.current >= 500)) {
+                lastShakeTimestampRef.current = now;
+                setShakeCount(prev => {
+                  const next = prev + 1;
+                  if (next >= shakeDuration) {
+                    handleStopTracking();
+                  }
+                  return next;
+                });
+              }
+            }
+          }
+          lastX = e.clientX;
+          lastY = e.clientY;
+          lastMouseTime = now;
+        };
+
+        keyListener = (e: KeyboardEvent) => {
+          if (e.code === 'Space' || e.key === ' ') {
+            const now = Date.now();
+            if (now - lastShakeTimestampRef.current >= 300) {
+              lastShakeTimestampRef.current = now;
+              setShakeCount(prev => {
+                const next = prev + 1;
+                if (next >= shakeDuration) {
+                  handleStopTracking();
+                }
+                return next;
+              });
+            }
+          }
+        };
+
+        window.addEventListener('mousemove', mouseListener);
+        window.addEventListener('keydown', keyListener);
+      }
+    }
+
+    return () => {
+      if (subscription) subscription.remove();
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        if (mouseListener) window.removeEventListener('mousemove', mouseListener);
+        if (keyListener) window.removeEventListener('keydown', keyListener);
       }
     };
   }, [isAlarmTriggered, forcedWakeup, shakeDuration]);
@@ -1602,13 +1799,13 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   const weeklyStats = getWeeklyStats();
   const activeSessions = weeklyStats.filter(s => s.hours > 0);
   const totalH = activeSessions.reduce((acc, s) => acc + s.hours, 0);
-  const avgHoursNum = activeSessions.length ? totalH / activeSessions.length : 7.2;
+  const avgHoursNum = activeSessions.length ? totalH / activeSessions.length : 0;
   const avgH = Math.floor(avgHoursNum);
   const avgM = Math.round((avgHoursNum - avgH) * 60);
-  const avgHoursStr = `${avgH}h ${avgM < 10 ? '0' : ''}${avgM}m`;
+  const avgHoursStr = activeSessions.length ? `${avgH}h ${avgM < 10 ? '0' : ''}${avgM}m` : "No data";
 
-  const avgSnore = activeSessions.length ? Math.round(activeSessions.reduce((acc, s) => acc + s.snoring, 0) / activeSessions.length) : 12;
-  const avgQuality = activeSessions.length ? Math.round(activeSessions.reduce((acc, s) => acc + s.quality, 0) / activeSessions.length) : 85;
+  const avgSnore = activeSessions.length ? Math.round(activeSessions.reduce((acc, s) => acc + s.snoring, 0) / activeSessions.length) : 0;
+  const avgQuality = activeSessions.length ? Math.round(activeSessions.reduce((acc, s) => acc + s.quality, 0) / activeSessions.length) : 0;
 
   // Calendar rendering helpers
   const getDaysInMonth = (year: number, month: number) => {
@@ -1725,172 +1922,180 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
           </HeaderBar>
 
           <ScrollContent showsVerticalScrollIndicator={false}>
-            {/* Top Pill background selector (Sleep Aid) */}
-            <SleepAidPillRow>
-              <SleepAidPill onPress={onOpenScenarios}>
-                <SleepAidPillText>
-                  🎵 {getActiveTrackName()}
-                </SleepAidPillText>
-                <SleepAidPillPlay onPress={handleTogglePillPlay}>
-                  {isPlaying && activeSoundscape === 'sleep' ? (
-                    <Pause size={10} color="#FFFFFF" fill="#FFFFFF" />
-                  ) : (
-                    <Play size={10} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 1 }} />
-                  )}
-                </SleepAidPillPlay>
-              </SleepAidPill>
-            </SleepAidPillRow>
 
             {/* Smart Paginator Card in Center (Fully Swipeable!) */}
             <ControlCard {...paginatorPanResponder.panHandlers}>
               <CardHeaderRow>
-                <TouchableOpacity onPress={() => setActiveModeIdx((prev) => (prev === 0 ? 2 : prev - 1))}>
+                <TouchableOpacity onPress={() => setActiveModeIdx((prev) => (prev === 0 ? 1 : 0))}>
                   <ChevronLeft size={20} color="#8E8E93" />
                 </TouchableOpacity>
                 <CardHeaderTitle>
-                  {activeModeIdx === 0 && 'No Alarm'}
-                  {activeModeIdx === 1 && 'Fixed Alarm'}
-                  {activeModeIdx === 2 && 'Smart Cycle Alarm'}
+                  {activeModeIdx === 0 ? 'Fixed Alarm' : 'Smart Cycle Alarm'}
                 </CardHeaderTitle>
-                <TouchableOpacity onPress={() => setActiveModeIdx((prev) => (prev === 2 ? 0 : prev + 1))}>
+                <TouchableOpacity onPress={() => setActiveModeIdx((prev) => (prev === 1 ? 0 : 1))}>
                   <ChevronRight size={20} color="#8E8E93" />
                 </TouchableOpacity>
               </CardHeaderRow>
 
-              {/* iOS glass time picker columns (Swipeable / Draggable vertically!) */}
-              {activeModeIdx !== 0 ? (
-                <SmartTimePickerContainer>
-                  {/* Hours */}
-                  <PickerCol {...hourPanResponder.panHandlers}>
-                    <PickerArrow onPress={incrementHour}>
-                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24 }}>▲</Text>
-                    </PickerArrow>
-                    <PickerDigit>{nextHour}</PickerDigit>
-                    <PickerActiveDigitBox>
-                      <PickerActiveInput
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        value={hourInputStr}
-                        onChangeText={(text) => {
-                          const clean = text.replace(/[^0-9]/g, '');
-                          setHourInputStr(clean);
-                          if (clean !== '') {
-                            const val = parseInt(clean, 10);
-                            if (val >= 1 && val <= 12) {
-                              setAlarmHour(val);
-                            }
+              {/* Time picker columns */}
+              <SmartTimePickerContainer>
+                {/* Hours */}
+                <PickerCol {...hourPanResponder.panHandlers}>
+                  <PickerArrow activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={incrementHour}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '700' }}>▲</Text>
+                  </PickerArrow>
+                  <PickerDigit>{nextHour}</PickerDigit>
+                  <PickerActiveDigitBox>
+                    <PickerActiveInput
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      value={hourInputStr}
+                      onChangeText={(text) => {
+                        const clean = text.replace(/[^0-9]/g, '');
+                        setHourInputStr(clean);
+                        if (clean !== '') {
+                          const val = parseInt(clean, 10);
+                          if (val >= 1 && val <= 12) {
+                            setAlarmHour(val);
                           }
-                        }}
-                        onBlur={() => {
-                          if (hourInputStr === '' || parseInt(hourInputStr, 10) < 1 || parseInt(hourInputStr, 10) > 12) {
-                            setAlarmHour(7);
-                            setHourInputStr('7');
-                          } else {
-                            setAlarmHour(parseInt(hourInputStr, 10));
-                          }
-                        }}
-                      />
-                    </PickerActiveDigitBox>
-                    <PickerDigit>{prevHour}</PickerDigit>
-                    <PickerArrow onPress={decrementHour}>
-                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24 }}>▼</Text>
-                    </PickerArrow>
-                  </PickerCol>
+                        }
+                      }}
+                      onBlur={() => {
+                        if (hourInputStr === '' || parseInt(hourInputStr, 10) < 1 || parseInt(hourInputStr, 10) > 12) {
+                          setAlarmHour(7);
+                          setHourInputStr('7');
+                        } else {
+                          setAlarmHour(parseInt(hourInputStr, 10));
+                        }
+                      }}
+                    />
+                  </PickerActiveDigitBox>
+                  <PickerDigit>{prevHour}</PickerDigit>
+                  <PickerArrow activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={decrementHour}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '700' }}>▼</Text>
+                  </PickerArrow>
+                </PickerCol>
 
-                  <ColonText>:</ColonText>
+                <ColonText>:</ColonText>
 
-                  {/* Minutes */}
-                  <PickerCol {...minutePanResponder.panHandlers}>
-                    <PickerArrow onPress={incrementMinute}>
-                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24 }}>▲</Text>
-                    </PickerArrow>
-                    <PickerDigit>{nextMinute < 10 ? '0' : ''}{nextMinute}</PickerDigit>
-                    <PickerActiveDigitBox>
-                      <PickerActiveInput
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        value={minuteInputStr}
-                        onChangeText={(text) => {
-                          const clean = text.replace(/[^0-9]/g, '');
-                          setMinuteInputStr(clean);
-                          if (clean !== '') {
-                            const val = parseInt(clean, 10);
-                            if (val >= 0 && val <= 59) {
-                              setAlarmMinute(val);
-                            }
-                          }
-                        }}
-                        onBlur={() => {
-                          if (minuteInputStr === '' || parseInt(minuteInputStr, 10) < 0 || parseInt(minuteInputStr, 10) > 59) {
-                            setAlarmMinute(30);
-                            setMinuteInputStr('30');
-                          } else {
-                            const val = parseInt(minuteInputStr, 10);
+                {/* Minutes */}
+                <PickerCol {...minutePanResponder.panHandlers}>
+                  <PickerArrow activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={incrementMinute}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '700' }}>▲</Text>
+                  </PickerArrow>
+                  <PickerDigit>{nextMinute < 10 ? '0' : ''}{nextMinute}</PickerDigit>
+                  <PickerActiveDigitBox>
+                    <PickerActiveInput
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      value={minuteInputStr}
+                      onChangeText={(text) => {
+                        const clean = text.replace(/[^0-9]/g, '');
+                        setMinuteInputStr(clean);
+                        if (clean !== '') {
+                          const val = parseInt(clean, 10);
+                          if (val >= 0 && val <= 59) {
                             setAlarmMinute(val);
-                            setMinuteInputStr(val < 10 ? `0${val}` : val.toString());
                           }
-                        }}
-                      />
-                    </PickerActiveDigitBox>
-                    <PickerDigit>{prevMinute < 10 ? '0' : ''}{prevMinute}</PickerDigit>
-                    <PickerArrow onPress={decrementMinute}>
-                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24 }}>▼</Text>
-                    </PickerArrow>
-                  </PickerCol>
+                        }
+                      }}
+                      onBlur={() => {
+                        if (minuteInputStr === '' || parseInt(minuteInputStr, 10) < 0 || parseInt(minuteInputStr, 10) > 59) {
+                          setAlarmMinute(30);
+                          setMinuteInputStr('30');
+                        } else {
+                          const val = parseInt(minuteInputStr, 10);
+                          setAlarmMinute(val);
+                          setMinuteInputStr(val < 10 ? `0${val}` : val.toString());
+                        }
+                      }}
+                    />
+                  </PickerActiveDigitBox>
+                  <PickerDigit>{prevMinute < 10 ? '0' : ''}{prevMinute}</PickerDigit>
+                  <PickerArrow activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={decrementMinute}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '700' }}>▼</Text>
+                  </PickerArrow>
+                </PickerCol>
 
-                  {/* AM/PM */}
-                  <PickerCol style={{ marginLeft: 12 }} {...periodPanResponder.panHandlers}>
-                    <PickerArrow onPress={() => setAlarmPeriod(p => p === 'AM' ? 'PM' : 'AM')}>
-                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24 }}>▲</Text>
-                    </PickerArrow>
-                    <PickerDigit style={{ opacity: 0.1 }}>{alarmPeriod === 'AM' ? 'PM' : 'AM'}</PickerDigit>
+                {/* AM/PM */}
+                <PickerCol style={{ marginLeft: 12 }} {...periodPanResponder.panHandlers}>
+                  <PickerArrow activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={() => setAlarmPeriod(p => p === 'AM' ? 'PM' : 'AM')}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '700' }}>▲</Text>
+                  </PickerArrow>
+                  <PickerDigit style={{ opacity: 0.1 }}>{alarmPeriod === 'AM' ? 'PM' : 'AM'}</PickerDigit>
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => setAlarmPeriod(p => p === 'AM' ? 'PM' : 'AM')}>
                     <PickerActiveDigitBox>
                       <PickerActiveDigit>{alarmPeriod}</PickerActiveDigit>
                     </PickerActiveDigitBox>
-                    <PickerDigit style={{ opacity: 0.1 }}>{alarmPeriod === 'AM' ? 'PM' : 'AM'}</PickerDigit>
-                    <PickerArrow onPress={() => setAlarmPeriod(p => p === 'AM' ? 'PM' : 'AM')}>
-                      <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 24 }}>▼</Text>
-                    </PickerArrow>
-                  </PickerCol>
-                </SmartTimePickerContainer>
-              ) : (
-                <View style={{ height: 140, justifyContent: 'center', alignItems: 'center' }}>
-                  <Moon size={58} color="rgba(255, 255, 255, 0.12)" />
-                </View>
-              )}
+                  </TouchableOpacity>
+                  <PickerDigit style={{ opacity: 0.1 }}>{alarmPeriod === 'AM' ? 'PM' : 'AM'}</PickerDigit>
+                  <PickerArrow activeOpacity={0.6} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} onPress={() => setAlarmPeriod(p => p === 'AM' ? 'PM' : 'AM')}>
+                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18, fontWeight: '700' }}>▼</Text>
+                  </PickerArrow>
+                </PickerCol>
+              </SmartTimePickerContainer>
 
               {/* Wake window information labels */}
               {activeModeIdx === 0 && (
-                <View style={{ alignItems: 'center' }}>
-                  <InfoTextLine1>Only sleep analyzed</InfoTextLine1>
-                  <InfoTextLine2>No alarm will go off in the morning</InfoTextLine2>
-                </View>
-              )}
-
-              {activeModeIdx === 1 && (
                 <View style={{ alignItems: 'center' }}>
                   <InfoTextLine1>No wake up window</InfoTextLine1>
                   <InfoTextLine2>Alarm will go off exactly at {alarmHour}:{alarmMinute < 10 ? '0' : ''}{alarmMinute} {alarmPeriod}</InfoTextLine2>
                 </View>
               )}
 
-              {activeModeIdx === 2 && (
-                <View style={{ alignItems: 'center' }}>
-                  <InfoTextLine1>Wake up easy window</InfoTextLine1>
-                  <InfoTextLine2 style={{ lineHeight: 16, textAlign: 'center' }}>
-                    {getSmartAlarmWindow(alarmHour, alarmMinute, alarmPeriod, windowSize)}
-                  </InfoTextLine2>
+              {activeModeIdx === 1 && (() => {
+                const circ = getCircadianAnalysis(bedtimeHour, bedtimeMinute, bedtimePeriod, alarmHour, alarmMinute, alarmPeriod);
+                return (
+                  <View style={{ alignItems: 'center', width: '100%', paddingHorizontal: 10, marginTop: 4 }}>
+                    {/* Bedtime Quick Adjuster */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.04)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 10 }}>
+                      <Text style={{ color: '#9B7EDE', fontSize: 12, fontWeight: '700', marginRight: 6 }}>🌙 Bedtime:</Text>
+                      <TouchableOpacity onPress={() => setBedtimeHour(h => h === 12 ? 1 : h + 1)} style={{ paddingHorizontal: 4 }}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>{bedtimeHour}:{bedtimeMinute < 10 ? '0' : ''}{bedtimeMinute}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setBedtimePeriod(p => p === 'AM' ? 'PM' : 'AM')} style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 4 }}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>{bedtimePeriod}</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Circadian 90-Minute Math Breakdown */}
+                    <View style={{ backgroundColor: 'rgba(155, 126, 222, 0.08)', borderWidth: 0.8, borderColor: 'rgba(155, 126, 222, 0.25)', borderRadius: 14, padding: 10, width: '100%', alignItems: 'center' }}>
+                      <Text style={{ color: '#9B7EDE', fontSize: 11, fontWeight: '700', marginBottom: 2 }}>
+                        🧠 Circadian Cycles ({circ.totalHours}h Sleep)
+                      </Text>
+                      <Text style={{ color: '#E6E6FA', fontSize: 11, textAlign: 'center', lineHeight: 15 }}>
+                        Optimal 90m Cycles: <Text style={{ color: '#4ECDC4', fontWeight: 'bold' }}>5 cycles ({circ.cycle5TimeStr})</Text> or <Text style={{ color: '#FF7E47', fontWeight: 'bold' }}>6 cycles ({circ.cycle6TimeStr})</Text>
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })()}
+
+              {/* Add Alarm Button */}
+              <MainStartButton activeOpacity={0.8} onPress={handleAddAlarmFromTile}>
+                <MainStartButtonText>+ Add Alarm</MainStartButtonText>
+              </MainStartButton>
+
+              {addedAlarmToast && (
+                <View style={{
+                  backgroundColor: 'rgba(78, 205, 196, 0.15)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(78, 205, 196, 0.4)',
+                  borderRadius: 12,
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  marginTop: 12,
+                  alignItems: 'center'
+                }}>
+                  <Text style={{ color: '#4ECDC4', fontSize: 13, fontWeight: '600' }}>
+                    {addedAlarmToast}
+                  </Text>
                 </View>
               )}
 
-              {/* Tracking activation Start button */}
-              <MainStartButton activeOpacity={0.8} onPress={handleStartTracking}>
-                <MainStartButtonText>Start</MainStartButtonText>
-              </MainStartButton>
-
-              {/* Indicator dots for paginated setup */}
+              {/* Indicator dots for paginated setup (2 slides) */}
               <PaginationDots>
-                {[0, 1, 2].map((idx) => (
+                {[0, 1].map((idx) => (
                   <Dot key={idx} active={activeModeIdx === idx} onPress={() => setActiveModeIdx(idx)} />
                 ))}
               </PaginationDots>
@@ -2010,6 +2215,75 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
                     trackColor={{ false: 'rgba(255,255,255,0.08)', true: '#FF7E47' }}
                     thumbColor="#FFFFFF"
                   />
+                </View>
+              </SettingsRow>
+
+              {/* Alarm Sound & Custom MP3 Picker */}
+              <SettingsRow>
+                <SettingsRowLeft>
+                  <SettingsIconBox color="#9B7EDE">
+                    <Volume2 size={16} color="#9B7EDE" />
+                  </SettingsIconBox>
+                  <SettingsTextGroup>
+                    <SettingsLabel>Alarm Sound & Ringtone</SettingsLabel>
+                    <SettingsSub>
+                      {selectedAlarmSound === 'classic_bell' && '🔔 Classic Alarm Bell'}
+                      {selectedAlarmSound === 'radar_siren' && '⚡ Radar Siren Alert'}
+                      {selectedAlarmSound === 'gentle_chime' && '🌅 Gentle Sunrise Chime'}
+                      {selectedAlarmSound === 'somatic_wave' && '🌊 Somatic Resonator'}
+                      {selectedAlarmSound === 'custom_mp3' && `📁 ${customSoundName}`}
+                    </SettingsSub>
+                  </SettingsTextGroup>
+                </SettingsRowLeft>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {Platform.OS === 'web' && (
+                    <input
+                      type="file"
+                      id="custom-alarm-sound-file"
+                      accept="audio/*"
+                      style={{ display: 'none' }}
+                      onChange={(e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const url = URL.createObjectURL(file);
+                          setCustomSoundUri(url);
+                          setCustomSoundName(file.name);
+                          setSelectedAlarmSound('custom_mp3');
+                        }
+                      }}
+                    />
+                  )}
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (selectedAlarmSound === 'classic_bell') setSelectedAlarmSound('radar_siren');
+                      else if (selectedAlarmSound === 'radar_siren') setSelectedAlarmSound('gentle_chime');
+                      else if (selectedAlarmSound === 'gentle_chime') setSelectedAlarmSound('somatic_wave');
+                      else if (selectedAlarmSound === 'somatic_wave') {
+                        if (Platform.OS === 'web' && typeof document !== 'undefined') {
+                          const fileInput = document.getElementById('custom-alarm-sound-file');
+                          if (fileInput) fileInput.click();
+                          else setSelectedAlarmSound('classic_bell');
+                        } else {
+                          setSelectedAlarmSound('classic_bell');
+                        }
+                      } else {
+                        setSelectedAlarmSound('classic_bell');
+                      }
+                    }}
+                    style={{
+                      backgroundColor: 'rgba(155, 126, 222, 0.12)',
+                      borderWidth: 0.8,
+                      borderColor: 'rgba(155, 126, 222, 0.3)',
+                      borderRadius: 10,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6
+                    }}
+                  >
+                    <Text style={{ color: '#9B7EDE', fontSize: 11, fontWeight: '700' }}>
+                      Change Sound 🎵
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </SettingsRow>
 
@@ -2170,9 +2444,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
           <View style={{ alignItems: 'center' }}>
             <TrackingTimeText>{currentTimeStr || '12:00 AM'}</TrackingTimeText>
             <TrackingSubText>
-              {activeModeIdx === 0
-                ? 'Only sleep analyzed'
-                : `Alarm ${alarmHour}:${alarmMinute < 10 ? '0' : ''}${alarmMinute} ${alarmPeriod}`}
+              {activeModeIdx === 0 ? 'Fixed Alarm' : 'Smart Alarm'} {alarmHour}:{alarmMinute < 10 ? '0' : ''}{alarmMinute} {alarmPeriod}
             </TrackingSubText>
           </View>
 

@@ -1,0 +1,34 @@
+{
+  "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/noise-tracks/Brown-Noise_city_space.mp3": {
+    "trackId": "focus",
+    "trackNum": 1,
+    "signedUrl": "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/noise-tracks/Brown-Noise_city_space.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAUSRKCLZZZDJ5CLXF%2F20260801%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260801T205422Z&X-Amz-Expires=86400&X-Amz-Signature=64f68f7d154393f9f703fe1abbde44da3aa7f8e39b8675fbd48159642358e4be&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+    "generatedAt": 1785617662610,
+    "expiresInSeconds": 86400,
+    "maxAgeHours": 20
+  },
+  "https://cdn.dopamind.app/audio/tracks/relax-v1.mp3": {
+    "trackId": "relax",
+    "trackNum": 2,
+    "signedUrl": "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/audio/tracks/relax-v1.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAUSRKCLZZZDJ5CLXF%2F20260801%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260801T212516Z&X-Amz-Expires=86400&X-Amz-Signature=69ef4d0e3122d14fa90ef8866d609fa9d7362f3758b1bc4a02bd8c6e16291d92&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+    "generatedAt": 1785619516555,
+    "expiresInSeconds": 86400,
+    "maxAgeHours": 20
+  },
+  "https://cdn.dopamind.app/audio/tracks/relax_1-v1.mp3": {
+    "trackId": "relax_1",
+    "trackNum": 12,
+    "signedUrl": "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/audio/tracks/relax_1-v1.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAUSRKCLZZZDJ5CLXF%2F20260802%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260802T125159Z&X-Amz-Expires=86400&X-Amz-Signature=541729d0d66eb54a9826d16da1a40083c3b0f4be9c55baf56a7e946955827f67&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+    "generatedAt": 1785675119963,
+    "expiresInSeconds": 86400,
+    "maxAgeHours": 20
+  },
+  "relax": {
+    "trackId": "relax",
+    "trackNum": 2,
+    "signedUrl": "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/audio/tracks/relax-v1.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAUSRKCLZZZDJ5CLXF%2F20260803%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260803T212534Z&X-Amz-Expires=86400&X-Amz-Signature=ee3045ea2628f59e433bd8d5ccbdf624f34835ee9470944673400e10860e1cff&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+    "generatedAt": 1785792334498,
+    "expiresInSeconds": 86400,
+    "maxAgeHours": 20
+  }
+}

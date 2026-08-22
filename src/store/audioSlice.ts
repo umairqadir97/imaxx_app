@@ -49,6 +49,14 @@ export interface AudioState {
   sessionActive: boolean;          // a full session (focus+break cycles) is underway
   hasActiveAudioSession: boolean;
   isYTAdPlaying: boolean;
+  isLoading: boolean;
+  isJustStartedPlaying: boolean;
+  trackBoosts: Record<string, number>;
+  globalBoost: number;
+  timerEndTime: number | null;
+  eqAmbient: number;
+  eqTempo: number;
+  eqFocus: number;
 }
 
 const initialSoundscapes: Soundscape[] = [
@@ -111,22 +119,22 @@ const initialState: AudioState = {
   isMiniPlayerDismissed: false,
   hasActiveAudioSession: false,
   timerMode: 'pomo',
-  animationStyle: 'falling',
+  animationStyle: 'flip',
   activeSubScreen: 'timer',
-  completedPomodorosCount: 3020, // matching focus stats in Image 4
-  totalFocusSeconds: 1540 * 3600, // matching 1540h total in Image 4
-  weeklyFocusMinutes: [372, 360, 455, 385, 387, 0, 0], // S, M, T, W, T, F, S
+  completedPomodorosCount: 0,
+  totalFocusSeconds: 0,
+  weeklyFocusMinutes: [0, 0, 0, 0, 0, 0, 0],
   categoryFocusSeconds: {
-    Work: 600 * 3600,
-    Study: 450 * 3600,
-    Meditate: 120 * 3600,
-    Fitness: 80 * 3600,
-    Code: 200 * 3600,
-    Relax: 90 * 3600,
+    Work: 0,
+    Study: 0,
+    Meditate: 0,
+    Fitness: 0,
+    Code: 0,
+    Relax: 0,
   },
   soundscapesList: initialSoundscapes,
   scenariosList: initialScenarios,
-  focusType: 'pomodoro',
+  focusType: 'quick',
   pomoFocusDuration: 1500,
   pomoBreakDuration: 300,
   alertPreference: 'both',
@@ -136,6 +144,14 @@ const initialState: AudioState = {
   currentPhase: 'focus',
   sessionActive: false,
   isYTAdPlaying: false,
+  isLoading: false,
+  isJustStartedPlaying: false,
+  trackBoosts: {},
+  globalBoost: 1.0,
+  timerEndTime: null,
+  eqAmbient: 0.5,
+  eqTempo: 0.5,
+  eqFocus: 0.5,
 };
 
 const audioSlice = createSlice({
@@ -147,8 +163,13 @@ const audioSlice = createSlice({
         // Pausing: stop the timer tick but keep session alive
         state.isPlaying = false;
         state.timerIsActive = false;
+        state.timerEndTime = null;
       } else {
         state.isPlaying = !state.isPlaying;
+        if (state.isPlaying && state.timerTimeLeft > 0) {
+          state.timerIsActive = true;
+          state.timerEndTime = Date.now() + state.timerTimeLeft * 1000;
+        }
       }
       if (state.isPlaying) {
         state.hasActiveAudioSession = true;
@@ -159,16 +180,22 @@ const audioSlice = createSlice({
       state.isPlaying = true;
       state.hasActiveAudioSession = true;
       state.isMiniPlayerDismissed = false;
+      if (state.timerTimeLeft > 0 && !state.timerIsActive) {
+        state.timerIsActive = true;
+        state.timerEndTime = Date.now() + state.timerTimeLeft * 1000;
+      }
     },
     pauseAudio: (state) => {
       state.isPlaying = false;
       state.timerIsActive = false;
+      state.timerEndTime = null;
     },
     resetAudioState: (state) => {
       state.isPlaying = false;
       state.activeScenarioId = null;
       state.hasActiveAudioSession = false;
       state.timerIsActive = false;
+      state.timerEndTime = null;
     },
     setSoundscape: (state, action: PayloadAction<string>) => {
       state.activeSoundscape = action.payload;
@@ -176,6 +203,7 @@ const audioSlice = createSlice({
       state.isPlaying = false;
       state.isMiniPlayerDismissed = false; // Show player again
       state.hasActiveAudioSession = true;
+      state.timerEndTime = null;
     },
     setScenario: (state, action: PayloadAction<string>) => {
       const scenario = state.scenariosList.find(s => s.id === action.payload);
@@ -206,6 +234,7 @@ const audioSlice = createSlice({
       state.isPlaying = true;
       state.isMiniPlayerDismissed = false; // Show player again
       state.hasActiveAudioSession = true;
+      state.timerEndTime = Date.now() + action.payload * 1000;
     },
     // Start a full session (resets elapsed time, sets total, begins focus phase)
     startSession: (state, action: PayloadAction<{ focusDuration: number; sessionTotal: number }>) => {
@@ -220,16 +249,18 @@ const audioSlice = createSlice({
       state.isPlaying = true;
       state.isMiniPlayerDismissed = false;
       state.hasActiveAudioSession = true;
+      state.timerEndTime = Date.now() + focusDuration * 1000;
     },
     tickTimer: (state) => {
-      if (state.timerIsActive && state.timerTimeLeft > 0) {
-        state.timerTimeLeft -= 1;
+      if (state.timerIsActive && state.timerEndTime) {
+        const remaining = Math.max(0, Math.ceil((state.timerEndTime - Date.now()) / 1000));
+        state.timerTimeLeft = remaining;
         if (state.sessionActive) {
           state.sessionElapsedSeconds += 1;
         }
-        if (state.timerTimeLeft === 0) {
-          // Phase complete — auto-advance handled in component via useEffect
+        if (remaining === 0) {
           state.timerIsActive = false;
+          state.timerEndTime = null;
           if (!state.sessionActive) {
             state.isPlaying = false;
           }
@@ -247,13 +278,17 @@ const audioSlice = createSlice({
         state.sessionActive = false;
         state.timerIsActive = false;
         state.isPlaying = false;
+        state.timerEndTime = null;
         return;
       }
+      
+      let nextDuration = state.pomoFocusDuration;
       // Flip phase
       if (state.currentPhase === 'focus') {
         state.currentPhase = 'break';
         state.timerDuration = state.pomoBreakDuration;
         state.timerTimeLeft = state.pomoBreakDuration;
+        nextDuration = state.pomoBreakDuration;
       } else {
         state.currentPhase = 'focus';
         state.timerDuration = state.pomoFocusDuration;
@@ -261,6 +296,7 @@ const audioSlice = createSlice({
       }
       state.timerIsActive = true;
       state.isPlaying = true;
+      state.timerEndTime = Date.now() + nextDuration * 1000;
     },
     stopSession: (state) => {
       state.sessionActive = false;
@@ -269,17 +305,20 @@ const audioSlice = createSlice({
       state.timerTimeLeft = state.timerDuration;
       state.sessionElapsedSeconds = 0;
       state.currentPhase = 'focus';
+      state.timerEndTime = null;
     },
     // Resume a paused session — re-activates timer with remaining time
     resumeSession: (state) => {
       if (state.sessionActive && !state.timerIsActive && state.timerTimeLeft > 0) {
         state.timerIsActive = true;
         state.isPlaying = true;
+        state.timerEndTime = Date.now() + state.timerTimeLeft * 1000;
       }
     },
     stopTimer: (state) => {
       state.timerIsActive = false;
       state.timerTimeLeft = state.timerDuration;
+      state.timerEndTime = null;
     },
     unlockPremium: (state) => {
       state.isPremiumUnlocked = true;
@@ -292,6 +331,7 @@ const audioSlice = createSlice({
       state.isPlaying = false;
       state.timerIsActive = false;
       state.hasActiveAudioSession = false;
+      state.timerEndTime = null;
     },
     setTimerMode: (state, action: PayloadAction<'pomo' | 'short_break' | 'long_break'>) => {
       state.timerMode = action.payload;
@@ -316,7 +356,10 @@ const audioSlice = createSlice({
       // Add to today's index in weeklyFocusMinutes (S, M, T, W, T, F, S)
       const dayIdx = new Date().getDay(); // 0 is Sunday
       if (dayIdx >= 0 && dayIdx < 7) {
-        state.weeklyFocusMinutes[dayIdx] += Math.floor(action.payload / 60);
+        if (typeof state.weeklyFocusMinutes[dayIdx] !== 'number') {
+          state.weeklyFocusMinutes[dayIdx] = 0;
+        }
+        state.weeklyFocusMinutes[dayIdx] += action.payload / 60;
       }
       // Add to active category focus seconds
       const cat = state.focusCategory || 'Work';
@@ -364,6 +407,27 @@ const audioSlice = createSlice({
     setSessionTotalSeconds: (state, action: PayloadAction<number>) => {
       state.sessionTotalSeconds = action.payload;
     },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.isLoading = action.payload;
+    },
+    setJustStartedPlaying: (state, action: PayloadAction<boolean>) => {
+      state.isJustStartedPlaying = action.payload;
+    },
+    setTrackBoost: (state, action: PayloadAction<{ trackId: string; boost: number }>) => {
+      state.trackBoosts[action.payload.trackId] = action.payload.boost;
+    },
+    setGlobalBoost: (state, action: PayloadAction<number>) => {
+      state.globalBoost = action.payload;
+    },
+    setEqAmbient: (state, action: PayloadAction<number>) => {
+      state.eqAmbient = action.payload;
+    },
+    setEqTempo: (state, action: PayloadAction<number>) => {
+      state.eqTempo = action.payload;
+    },
+    setEqFocus: (state, action: PayloadAction<number>) => {
+      state.eqFocus = action.payload;
+    },
   },
 });
 
@@ -400,6 +464,13 @@ export const {
   setAlertPreference,
   setFocusCategory,
   setSessionTotalSeconds,
+  setLoading,
+  setJustStartedPlaying,
+  setTrackBoost,
+  setGlobalBoost,
+  setEqAmbient,
+  setEqTempo,
+  setEqFocus,
 } = audioSlice.actions;
 
 export default audioSlice.reducer;

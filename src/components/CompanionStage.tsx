@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, Image, Animated, Easing, Platform, ImageSourcePropType } from 'react-native';
 import styled from 'styled-components/native';
-import { Lock, X, Star, CheckSquare } from 'lucide-react-native';
+import { Lock, X, Star, CheckSquare, Compass } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Conditional Rive import (native only) ───
@@ -55,6 +55,7 @@ interface CompanionStageProps {
   totalTasksCount: number;
   completedTasksCount: number;
   onPressTaskPreview: () => void;
+  onPressUserJourney?: () => void;
 }
 
 // ─── Emotional state from progress ───
@@ -275,7 +276,7 @@ const ImageCompanion: React.FC<{ activeCompanion: CompanionType; emotionalState:
 // ─── Main CompanionStage ───
 export const CompanionStage: React.FC<CompanionStageProps> = ({
   fillProgress, state, totalFocusSeconds, completedHabitsCount, maxStreakCount, activeCompanion, onChangeCompanion,
-  totalTasksCount, completedTasksCount, onPressTaskPreview,
+  totalTasksCount, completedTasksCount, onPressTaskPreview, onPressUserJourney,
 }) => {
   const [showRosterModal, setShowRosterModal] = useState(false);
 
@@ -309,57 +310,71 @@ export const CompanionStage: React.FC<CompanionStageProps> = ({
 
   return (
     <StageCard>
-      <StageHeader>
-        <StageTitleArea>
-          <CompanionName>{getCompanionName()}</CompanionName>
-          <CompanionStatusText>{getEmotionalLabel(emotionalState)}</CompanionStatusText>
-        </StageTitleArea>
-        <RosterTrigger onPress={() => setShowRosterModal(true)}>
-          <Star size={10} color="#08080C" fill="#08080C" style={{ marginRight: 4 }} />
-          <RosterTriggerText>Choose Pet</RosterTriggerText>
-        </RosterTrigger>
-      </StageHeader>
-
-      <CharacterStageBox>
-        {/* Particle Overlay */}
-        <FloatingParticles emotionalState={emotionalState} />
-
-        {showRive ? (
-          <RiveCompanion emotionalState={emotionalState} />
-        ) : (
-          <ImageCompanion
-            activeCompanion={activeCompanion}
-            emotionalState={emotionalState}
-            companionColor={companionColor}
-          />
-        )}
-      </CharacterStageBox>
-
-      <ProgressBarContainer>
-        <ProgressBarTrack>
-          <ProgressBarFill style={{ width: `${progressPercent}%`, backgroundColor: companionColor }} />
-        </ProgressBarTrack>
-        <ProgressBarLabel>
-          <ProgressLabelText>Energy</ProgressLabelText>
-          <ProgressValueText style={{ color: companionColor }}>{progressPercent}%</ProgressValueText>
-        </ProgressBarLabel>
-      </ProgressBarContainer>
-
-      {/* Task Preview button inside Pet Stage Card */}
-      <TaskPreviewButton onPress={onPressTaskPreview} activeOpacity={0.85}>
-        <CheckSquare size={13} color={companionColor} style={{ marginRight: 6 }} />
-        <TaskPreviewText>
-          {completedTasksCount === totalTasksCount && totalTasksCount > 0 ? (
-            <Text style={{ color: '#4ECDC4', fontWeight: '800' }}>
-              ✨ All tasks completed today! 🎉
-            </Text>
+      <StageContentRow>
+        {/* Left Column: Interactive Character Box */}
+        <CharacterStageBox onPress={onPressUserJourney} activeOpacity={0.88}>
+          <FloatingParticles emotionalState={emotionalState} />
+          {showRive ? (
+            <RiveCompanion emotionalState={emotionalState} />
           ) : (
-            <Text style={{ color: '#E1E1E6', fontWeight: '700', fontSize: 11 }}>
-              📝 {remainingCount} task{remainingCount !== 1 ? 's' : ''} remaining today • <Text style={{ color: companionColor, fontWeight: '800' }}>Tap to complete</Text>
-            </Text>
+            <ImageCompanion
+              activeCompanion={activeCompanion}
+              emotionalState={emotionalState}
+              companionColor={companionColor}
+            />
           )}
-        </TaskPreviewText>
-      </TaskPreviewButton>
+          <JourneyHintBadge>
+            <Compass size={10} color="#00F2FE" style={{ marginRight: 3 }} />
+            <JourneyHintText>Road Map</JourneyHintText>
+          </JourneyHintBadge>
+        </CharacterStageBox>
+
+        {/* Right Column: Info, Energy, Buttons */}
+        <StageRightColumn>
+          <StageHeaderRow>
+            <StageTitleArea>
+              <CompanionName>{getCompanionName()}</CompanionName>
+              <CompanionStatusText>{getEmotionalLabel(emotionalState)}</CompanionStatusText>
+            </StageTitleArea>
+            <RosterTrigger onPress={() => setShowRosterModal(true)}>
+              <Star size={10} color="#08080C" fill="#08080C" style={{ marginRight: 4 }} />
+              <RosterTriggerText>Choose Pet</RosterTriggerText>
+            </RosterTrigger>
+          </StageHeaderRow>
+
+          <ProgressBarContainer>
+            <ProgressBarHeader>
+              <ProgressLabelText>Energy</ProgressLabelText>
+              <ProgressValueText style={{ color: companionColor }}>{progressPercent}%</ProgressValueText>
+            </ProgressBarHeader>
+            <ProgressBarTrack>
+              <ProgressBarFill style={{ width: `${progressPercent}%`, backgroundColor: companionColor }} />
+            </ProgressBarTrack>
+          </ProgressBarContainer>
+
+          <StageActionsRow>
+            <TaskPreviewButton onPress={onPressTaskPreview} activeOpacity={0.85}>
+              <CheckSquare size={12} color={companionColor} style={{ marginRight: 4 }} />
+              <TaskPreviewText>
+                {completedTasksCount === totalTasksCount && totalTasksCount > 0 ? (
+                  <Text style={{ color: '#4ECDC4', fontWeight: '800', fontSize: 10 }}>
+                    ✨ All done! 🎉
+                  </Text>
+                ) : (
+                  <Text style={{ color: '#E1E1E6', fontWeight: '700', fontSize: 10 }}>
+                    📝 {remainingCount} left • <Text style={{ color: companionColor, fontWeight: '800' }}>Check</Text>
+                  </Text>
+                )}
+              </TaskPreviewText>
+            </TaskPreviewButton>
+
+            <UserJourneyButton onPress={onPressUserJourney} activeOpacity={0.85}>
+              <Compass size={12} color="#08080C" style={{ marginRight: 4 }} />
+              <UserJourneyButtonText>Road Map</UserJourneyButtonText>
+            </UserJourneyButton>
+          </StageActionsRow>
+        </StageRightColumn>
+      </StageContentRow>
 
       {/* ─── Roster Modal ─── */}
       <Modal animationType="slide" transparent={true} visible={showRosterModal} onRequestClose={() => setShowRosterModal(false)}>
@@ -431,100 +446,158 @@ const StageCard = styled.View`
   border-width: 1px;
   border-color: rgba(255, 255, 255, 0.06);
   border-radius: 20px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   margin-bottom: 12px;
   margin-top: 4px;
 `;
 
-const StageHeader = styled.View`
+const StageContentRow = styled.View`
   flex-direction: row;
-  justify-content: space-between;
-  width: 100%;
   align-items: center;
-  margin-bottom: 4px;
 `;
 
-const StageTitleArea = styled.View``;
+const CharacterStageBox = styled.TouchableOpacity`
+  width: 105px;
+  height: 105px;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background-color: rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  border-width: 1px;
+  border-color: rgba(255, 255, 255, 0.04);
+`;
+
+const JourneyHintBadge = styled.View`
+  position: absolute;
+  bottom: 4px;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 2px 6px;
+  border-radius: 8px;
+  flex-direction: row;
+  align-items: center;
+  border-width: 1px;
+  border-color: rgba(0, 242, 254, 0.3);
+`;
+
+const JourneyHintText = styled.Text`
+  color: #00F2FE;
+  font-size: 8px;
+  font-weight: 800;
+`;
+
+const StageRightColumn = styled.View`
+  flex: 1;
+  margin-left: 12px;
+`;
+
+const StageHeaderRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+`;
+
+const StageTitleArea = styled.View`
+  flex: 1;
+  margin-right: 6px;
+`;
 
 const CompanionName = styled.Text`
   color: #FFFFFF;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.2px;
 `;
 
 const CompanionStatusText = styled.Text`
   color: #8E8E93;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  margin-top: 2px;
+  margin-top: 1px;
 `;
 
 const RosterTrigger = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   background-color: #FF7E47;
-  padding: 5px 10px;
-  border-radius: 16px;
+  padding: 4px 8px;
+  border-radius: 12px;
 `;
 
 const RosterTriggerText = styled.Text`
   color: #08080C;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
 `;
 
-const CharacterStageBox = styled.View`
-  height: 140px;
-  justify-content: center;
-  align-items: center;
-  position: relative;
+const ProgressBarContainer = styled.View`
+  margin-vertical: 6px;
 `;
 
-const ProgressBarContainer = styled.View`
-  margin-top: 2px;
+const ProgressBarHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 3px;
 `;
 
 const ProgressBarTrack = styled.View`
   width: 100%;
-  height: 5px;
-  border-radius: 2.5px;
+  height: 4px;
+  border-radius: 2px;
   background-color: rgba(255, 255, 255, 0.06);
   overflow: hidden;
 `;
 
 const ProgressBarFill = styled.View`
   height: 100%;
-  border-radius: 2.5px;
-`;
-
-const ProgressBarLabel = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  margin-top: 6px;
+  border-radius: 2px;
 `;
 
 const ProgressLabelText = styled.Text`
   color: #6B6280;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
 `;
 
 const ProgressValueText = styled.Text`
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 800;
 `;
 
+const StageActionsRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 4px;
+`;
+
 const TaskPreviewButton = styled.TouchableOpacity`
+  flex: 1.2;
   flex-direction: row;
   align-items: center;
   background-color: rgba(255, 255, 255, 0.03);
   border-width: 1px;
   border-color: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 8px 12px;
-  margin-top: 10px;
+  border-radius: 10px;
+  padding: 6px 8px;
+  margin-right: 6px;
   justify-content: center;
+`;
+
+const UserJourneyButton = styled.TouchableOpacity`
+  flex: 1;
+  flex-direction: row;
+  align-items: center;
+  background-color: #00F2FE;
+  border-radius: 10px;
+  padding: 6px 8px;
+  justify-content: center;
+`;
+
+const UserJourneyButtonText = styled.Text`
+  color: #08080C;
+  font-size: 10px;
+  font-weight: 800;
 `;
 
 const TaskPreviewText = styled.View`

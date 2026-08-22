@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ScrollView, Dimensions, TouchableOpacity, Text, Modal, Platform, Image, Animated, Easing, View } from 'react-native';
 import styled from 'styled-components/native';
-import { Compass, Gift, User, Plus, Lock, Play, Pause, X, Star, Sparkles, Check, ChevronRight, Grid, Calendar, Clock, Settings as SettingsIcon } from 'lucide-react-native';
+import { Compass, Gift, User, Plus, Lock, Play, Pause, X, Star, Sparkles, Check, ChevronRight, Grid, Calendar, Clock, Settings as SettingsIcon, Music, Flame, BarChart2, Activity, Volume2, RotateCcw } from 'lucide-react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useAppDispatch, useAppSelector } from '../store';
 import { setSoundscape, startTimer, togglePlayback, stopTimer } from '../store/audioSlice';
@@ -12,6 +12,7 @@ import { theme } from '../theme/colors';
 import { CompanionStage, CompanionType, COMPANION_IMAGES, getEmotionalState, getEmotionalLabel } from '../components/CompanionStage';
 import { getLocalDateStr } from '../utils/date';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { UserJourneyMapModal } from '../components/UserJourneyMapModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -182,13 +183,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   // Redux store states
   const habits = useAppSelector((state) => state.habits.habits);
-  const { isPlaying, timerIsActive, timerTimeLeft, timerDuration, activeSoundscape, completedPomodorosCount, totalFocusSeconds } = useAppSelector((state) => state.audio);
+  const { isPlaying, timerIsActive, timerTimeLeft, timerDuration, activeSoundscape, completedPomodorosCount, totalFocusSeconds, weeklyFocusMinutes } = useAppSelector((state) => state.audio);
 
   const [selectedDuration, setSelectedDuration] = useState(1500); // Default 25 min
   const [activeCompanion, setActiveCompanion] = useState<CompanionType>('red_panda');
   const [showWidgetSimulator, setShowWidgetSimulator] = useState(false);
   const [showQuickCheckoff, setShowQuickCheckoff] = useState(false);
-  const [activeWidgetType, setActiveWidgetType] = useState<'progress' | 'checklist' | 'circadian'>('progress');
+  const [showUserJourneyModal, setShowUserJourneyModal] = useState(false);
+  const [activeWidgetType, setActiveWidgetType] = useState<'companion' | 'habits' | 'timer' | 'stats' | 'soundscape' | 'circadian'>('companion');
   const [confettiParticles, setConfettiParticles] = useState<any[]>([]);
 
   const triggerConfettiAnimation = () => {
@@ -231,7 +233,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     dispatch(setHabitsSubTab('micro'));
     try {
       await AsyncStorage.setItem('habits_sub_tab', 'micro');
-    } catch (e) {}
+    } catch (e) { }
     onNavigateToTab('habits');
   };
 
@@ -243,7 +245,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         if (saved) {
           setActiveCompanion(saved as CompanionType);
         }
-      } catch (e) {}
+      } catch (e) { }
     };
     loadCompanion();
   }, []);
@@ -252,7 +254,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     setActiveCompanion(newCompanion);
     try {
       await AsyncStorage.setItem('iMaxx_active_companion', newCompanion);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // Merge completions from all habits to show a combined HabitKit activity board
@@ -365,7 +367,56 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           totalTasksCount={totalHabits}
           completedTasksCount={completedHabitsCount}
           onPressTaskPreview={() => setShowQuickCheckoff(true)}
+          onPressUserJourney={() => setShowUserJourneyModal(true)}
         />
+
+        {/* Consistency Counter (moved directly below Companion Stage & above ADHD Focus Dial) */}
+        <SectionTitleRow>
+          <SectionTitle>Consistency Counter</SectionTitle>
+          <ShowAllLink onPress={navigateToMicroHabits}>Manage Habits →</ShowAllLink>
+        </SectionTitleRow>
+
+        <ConsistencyHabitsList>
+          {habits.length === 0 ? (
+            <ConsistencyHabitCard onPress={navigateToMicroHabits} activeOpacity={0.85}>
+              <ConsistencyCardLeft>
+                <ConsistencyHabitName>Create your first micro-habit</ConsistencyHabitName>
+                <Text style={{ color: '#6B6280', fontSize: 11 }}>Build daily routines to level up companion energy</Text>
+              </ConsistencyCardLeft>
+              <ConsistencyCardRight>
+                <ChevronRight size={16} color="#6B6280" />
+              </ConsistencyCardRight>
+            </ConsistencyHabitCard>
+          ) : (
+            habits.slice(0, 4).map(habit => {
+              const dots = getHabitLast10Days(habit.completions);
+              return (
+                <ConsistencyHabitCard
+                  key={habit.id}
+                  onPress={navigateToMicroHabits}
+                  activeOpacity={0.85}
+                >
+                  <ConsistencyCardLeft>
+                    <ConsistencyHabitName>{habit.name}</ConsistencyHabitName>
+                    <MiniGridRow>
+                      {dots.map((dot, idx) => (
+                        <MiniGridDot
+                          key={idx}
+                          completed={dot.completed}
+                          color={habit.color || '#FF7E47'}
+                        />
+                      ))}
+                    </MiniGridRow>
+                  </ConsistencyCardLeft>
+                  <ConsistencyCardRight>
+                    <MiniStreakText>🔥 {habit.streakCount}d</MiniStreakText>
+                    <ChevronRight size={16} color="#6B6280" />
+                  </ConsistencyCardRight>
+                </ConsistencyHabitCard>
+              );
+            })
+          )}
+        </ConsistencyHabitsList>
 
         {/* Frictionless ADHD Zero-Guilt Clean Slate Banner */}
         {completedYesterdayCount === 0 && (
@@ -503,59 +554,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
             <WidgetStatBox>
               <WidgetStatLabel>Daily Average</WidgetStatLabel>
-              <WidgetStatValue>6h 12m</WidgetStatValue>
+              <WidgetStatValue>
+                {(() => {
+                  const activeDaysCount = weeklyFocusMinutes ? weeklyFocusMinutes.filter(m => m > 0).length || 1 : 1;
+                  const weeklyMins = weeklyFocusMinutes ? weeklyFocusMinutes.reduce((acc, m) => acc + m, 0) : 0;
+                  const dailyAvgMins = Math.round(weeklyMins / activeDaysCount);
+                  const avgH = Math.floor(dailyAvgMins / 60);
+                  const avgM = Math.round(dailyAvgMins % 60);
+                  return weeklyMins > 0 ? `${avgH}h ${avgM < 10 ? '0' : ''}${avgM}m` : '0h 00m';
+                })()}
+              </WidgetStatValue>
             </WidgetStatBox>
           </WidgetStatsRow>
           <WidgetStatsSubtext>🔥 Active focus sessions sync in real-time.</WidgetStatsSubtext>
         </FocusStatsWidgetCard>
-
-        {/* Unified HabitKit Contributions Board (from HabitKit) */}
-        <SectionTitleRow>
-          <SectionTitle>Consistency Counter</SectionTitle>
-          <ShowAllLink onPress={navigateToMicroHabits}>Manage Garden →</ShowAllLink>
-        </SectionTitleRow>
-
-        <ConsistencyHabitsList>
-          {habits.length === 0 ? (
-            <ConsistencyHabitCard onPress={navigateToMicroHabits} activeOpacity={0.85}>
-              <ConsistencyCardLeft>
-                <ConsistencyHabitName>Create your first micro-habit</ConsistencyHabitName>
-                <Text style={{ color: '#6B6280', fontSize: 11 }}>Build daily routines to level up companion energy</Text>
-              </ConsistencyCardLeft>
-              <ConsistencyCardRight>
-                <ChevronRight size={16} color="#6B6280" />
-              </ConsistencyCardRight>
-            </ConsistencyHabitCard>
-          ) : (
-            habits.slice(0, 4).map(habit => {
-              const dots = getHabitLast10Days(habit.completions);
-              return (
-                <ConsistencyHabitCard 
-                  key={habit.id} 
-                  onPress={navigateToMicroHabits}
-                  activeOpacity={0.85}
-                >
-                  <ConsistencyCardLeft>
-                    <ConsistencyHabitName>{habit.name}</ConsistencyHabitName>
-                    <MiniGridRow>
-                      {dots.map((dot, idx) => (
-                        <MiniGridDot 
-                          key={idx} 
-                          completed={dot.completed} 
-                          color={habit.color || '#FF7E47'} 
-                        />
-                      ))}
-                    </MiniGridRow>
-                  </ConsistencyCardLeft>
-                  <ConsistencyCardRight>
-                    <MiniStreakText>🔥 {habit.streakCount}d</MiniStreakText>
-                    <ChevronRight size={16} color="#6B6280" />
-                  </ConsistencyCardRight>
-                </ConsistencyHabitCard>
-              );
-            })
-          )}
-        </ConsistencyHabitsList>
 
         {/* ADHD Homescreen & Lockscreen Widgets Section */}
         <SectionTitleRow>
@@ -563,52 +575,123 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <SectionInfoText>Tap to open interactive simulator</SectionInfoText>
         </SectionTitleRow>
 
-        <WidgetsHorizontalCarousel horizontal showsHorizontalScrollIndicator={false}>
-          {/* Widget 1: Pomodoro Lockscreen circle */}
-          <WidgetMockCard onPress={() => { setActiveWidgetType('progress'); setShowWidgetSimulator(true); }}>
+        <WidgetsHorizontalCarousel horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16 }}>
+          {/* Card 1: Companion */}
+          <WidgetMockCard onPress={() => { setActiveWidgetType('companion'); setShowWidgetSimulator(true); }}>
             <WidgetTitleRow>
-              <WidgetPill>LOCKSCREEN</WidgetPill>
+              <WidgetPill style={{ color: '#00F2FE' }}>COMPANION</WidgetPill>
             </WidgetTitleRow>
-            <WidgetDialCenter>
-              <Svg width={40} height={40}>
-                <Circle cx={20} cy={20} r={16} stroke="#1E1E26" strokeWidth={3} fill="none" />
-                <Circle cx={20} cy={20} r={16} stroke="#00F2FE" strokeWidth={3} strokeDasharray={2 * Math.PI * 16} strokeDashoffset={2 * Math.PI * 16 * 0.4} fill="none" />
-              </Svg>
-              <WidgetDialText>15m</WidgetDialText>
-            </WidgetDialCenter>
-            <WidgetNameText>Focus Progress</WidgetNameText>
+            <Image
+              source={
+                activeCompanion === 'red_panda'
+                  ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
+                  : COMPANION_IMAGES[activeCompanion]?.roster || COMPANION_IMAGES.red_panda.happy
+              }
+              style={{ width: 44, height: 44, borderRadius: 8, marginVertical: 6 }}
+              resizeMode="contain"
+            />
+            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700', textAlign: 'center' }}>
+              Energy: {Math.round(fillProgress * 100)}%
+            </Text>
+            <WidgetNameText style={{ fontSize: 9, opacity: 0.6 }}>Tap to customize</WidgetNameText>
           </WidgetMockCard>
 
-          {/* Widget 2: Micro-habit checker */}
-          <WidgetMockCard onPress={() => { setActiveWidgetType('checklist'); setShowWidgetSimulator(true); }}>
+          {/* Card 2: Habits Checklist */}
+          <WidgetMockCard onPress={() => { setActiveWidgetType('habits'); setShowWidgetSimulator(true); }}>
             <WidgetTitleRow>
-              <WidgetPill>HOMESCREEN</WidgetPill>
+              <WidgetPill style={{ color: '#FF7E47' }}>DAILY HABITS</WidgetPill>
             </WidgetTitleRow>
-            <WidgetHabitsList>
-              <WidgetHabitRow>
-                <CheckWrapper completed={true} color="#FF7E47">
-                  <Check size={10} color="#08080A" strokeWidth={3} />
-                </CheckWrapper>
-                <WidgetHabitName completed={true}>Mindfulness</WidgetHabitName>
-              </WidgetHabitRow>
-              <WidgetHabitRow style={{ marginTop: 6 }}>
-                <CheckWrapper completed={false} color="#00F2FE" />
-                <WidgetHabitName completed={false}>Drink Water</WidgetHabitName>
-              </WidgetHabitRow>
-            </WidgetHabitsList>
-            <WidgetNameText>Focus Checklist</WidgetNameText>
+            <View style={{ width: '100%', marginVertical: 4 }}>
+              {habits.slice(0, 2).map((habit) => {
+                const isCompleted = habit.completions.includes(todayStr);
+                return (
+                  <TouchableOpacity
+                    key={habit.id}
+                    onPress={(e) => {
+                      e.stopPropagation(); // Prevent opening simulator modal
+                      handleToggleHabitCompletion(habit.id);
+                    }}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 3 }}
+                  >
+                    <WidgetCheckCircle completed={isCompleted} color={habit.color} style={{ width: 10, height: 10, borderRadius: 5 }}>
+                      {isCompleted && <Check size={5} color="#08080A" strokeWidth={4} />}
+                    </WidgetCheckCircle>
+                    <Text numberOfLines={1} style={{ color: isCompleted ? '#444' : '#FFF', fontSize: 9, marginLeft: 6, textDecorationLine: isCompleted ? 'line-through' : 'none', flex: 1 }}>
+                      {habit.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <WidgetNameText style={{ fontSize: 9, opacity: 0.6 }}>Tap to open list</WidgetNameText>
           </WidgetMockCard>
 
-          {/* Widget 3: Circadian Indicator */}
+          {/* Card 3: Pomodoro Focus Timer */}
+          <WidgetMockCard onPress={() => { setActiveWidgetType('timer'); setShowWidgetSimulator(true); }}>
+            <WidgetTitleRow>
+              <WidgetPill style={{ color: '#FFB347' }}>FOCUS TIMER</WidgetPill>
+            </WidgetTitleRow>
+            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '900', marginVertical: 4 }}>
+              {formatTimer(timerTimeLeft)}
+            </Text>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                handleStartTimer();
+              }}
+              style={{ backgroundColor: 'rgba(255,179,71,0.1)', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 8, marginVertical: 4 }}
+            >
+              <Text style={{ color: '#FFB347', fontSize: 9, fontWeight: '800' }}>
+                {timerIsActive ? 'PAUSE' : 'START'}
+              </Text>
+            </TouchableOpacity>
+            <WidgetNameText style={{ fontSize: 9, opacity: 0.6 }}>{timerIsActive ? 'Focus Running' : 'Tap to start'}</WidgetNameText>
+          </WidgetMockCard>
+
+          {/* Card 4: Focus Stats */}
+          <WidgetMockCard onPress={() => { setActiveWidgetType('stats'); setShowWidgetSimulator(true); }}>
+            <WidgetTitleRow>
+              <WidgetPill style={{ color: '#38EF7D' }}>FOCUS STATS</WidgetPill>
+            </WidgetTitleRow>
+            <BarChart2 size={24} color="#38EF7D" style={{ marginVertical: 4 }} />
+            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textAlign: 'center' }}>
+              {Math.round(totalFocusSeconds / 60)} mins tracked
+            </Text>
+            <WidgetNameText style={{ fontSize: 9, opacity: 0.6 }}>View weekly stats</WidgetNameText>
+          </WidgetMockCard>
+
+          {/* Card 5: Mind Waves */}
+          <WidgetMockCard onPress={() => { setActiveWidgetType('soundscape'); setShowWidgetSimulator(true); }}>
+            <WidgetTitleRow>
+              <WidgetPill style={{ color: '#9B7EDE' }}>MIND WAVES</WidgetPill>
+            </WidgetTitleRow>
+            <Music size={24} color="#9B7EDE" style={{ marginVertical: 4 }} />
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                dispatch(togglePlayback());
+              }}
+              style={{ backgroundColor: 'rgba(155,126,222,0.15)', paddingVertical: 4, paddingHorizontal: 12, borderRadius: 8 }}
+            >
+              <Text style={{ color: '#9B7EDE', fontSize: 9, fontWeight: '800' }}>
+                {isPlaying ? 'PAUSE' : 'PLAY'}
+              </Text>
+            </TouchableOpacity>
+            <WidgetNameText style={{ fontSize: 9, opacity: 0.6 }} numberOfLines={1}>
+              {activeSoundscape.toUpperCase()}
+            </WidgetNameText>
+          </WidgetMockCard>
+
+          {/* Card 6: Circadian Rhythm */}
           <WidgetMockCard onPress={() => { setActiveWidgetType('circadian'); setShowWidgetSimulator(true); }}>
             <WidgetTitleRow>
-              <WidgetPill>DYNAMIC STATUS</WidgetPill>
+              <WidgetPill style={{ color: '#E91E63' }}>CIRCADIAN</WidgetPill>
             </WidgetTitleRow>
-            <WidgetEnergyStatusColor color="#FFB347">
-              <Clock size={16} color="#08080A" />
-            </WidgetEnergyStatusColor>
-            <WidgetEnergyLabel>High Peak Energy</WidgetEnergyLabel>
-            <WidgetNameText>Circadian Sync</WidgetNameText>
+            <Activity size={24} color="#E91E63" style={{ marginVertical: 4 }} />
+            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textAlign: 'center' }}>
+              Peak alert state
+            </Text>
+            <WidgetNameText style={{ fontSize: 9, opacity: 0.6 }}>Tap to sync status</WidgetNameText>
           </WidgetMockCard>
         </WidgetsHorizontalCarousel>
 
@@ -623,55 +706,69 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         visible={showQuickCheckoff}
         onRequestClose={() => setShowQuickCheckoff(false)}
       >
-        <QuickCheckoffOverlay>
-          <QuickCheckoffCard>
-            <QuickCheckoffHeader>
-              <ModalTitle>Today's Tasks & Goals</ModalTitle>
-              <TouchableOpacity onPress={() => setShowQuickCheckoff(false)}>
-                <X size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            </QuickCheckoffHeader>
-            <ModalSubtitle>Quickly log completions for your daily checklist</ModalSubtitle>
-
-            <ScrollView contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
-              {habits.length === 0 ? (
-                <View style={{ alignItems: 'center', marginVertical: 40 }}>
-                  <Sparkles size={40} color="#6B6280" style={{ marginBottom: 12 }} />
-                  <Text style={{ color: '#8E8E93', fontSize: 14, fontWeight: 'bold' }}>No tasks created yet</Text>
-                  <TouchableOpacity 
-                    onPress={() => { setShowQuickCheckoff(false); onNavigateToTab('habits'); }}
-                    style={{ marginTop: 12, backgroundColor: '#FF7E47', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 }}
-                  >
-                    <Text style={{ color: '#08080C', fontWeight: 'bold', fontSize: 12 }}>Go to Habits tab</Text>
+        <TouchableOpacity
+          style={{ flex: 1 }}
+          activeOpacity={1}
+          onPress={() => setShowQuickCheckoff(false)}
+        >
+          <QuickCheckoffOverlay>
+            <TouchableOpacity activeOpacity={1} onPress={(e: any) => e.stopPropagation()}>
+              <QuickCheckoffCard>
+                <QuickCheckoffHeader>
+                  <ModalTitle>Today's Tasks & Goals</ModalTitle>
+                  <TouchableOpacity onPress={() => setShowQuickCheckoff(false)}>
+                    <X size={20} color="#FFFFFF" />
                   </TouchableOpacity>
-                </View>
-              ) : (
-                habits.map(habit => {
-                  const isCompletedToday = habit.completions.includes(todayStr);
-                  return (
-                    <HabitCheckRow key={habit.id} completed={isCompletedToday}>
-                      <HabitPressableArea onPress={() => handleToggleHabitCompletion(habit.id)}>
-                        <CheckCircle completed={isCompletedToday} color={habit.color}>
-                          {isCompletedToday && <Check size={14} color="#08080A" strokeWidth={3} />}
-                        </CheckCircle>
-                        <HabitTextInfo>
-                          <HabitName completed={isCompletedToday}>{habit.name}</HabitName>
-                          <HabitUnit>{habit.smallestUnit}</HabitUnit>
-                        </HabitTextInfo>
-                      </HabitPressableArea>
-                      <HabitStreak>🔥 {habit.streakCount}d</HabitStreak>
-                    </HabitCheckRow>
-                  );
-                })
-              )}
-            </ScrollView>
+                </QuickCheckoffHeader>
+                <ModalSubtitle>Quickly log completions for your daily checklist</ModalSubtitle>
 
-            <CloseQuickCheckoffButton onPress={() => setShowQuickCheckoff(false)}>
-              <CloseQuickCheckoffButtonText>Close Checklist</CloseQuickCheckoffButtonText>
-            </CloseQuickCheckoffButton>
-          </QuickCheckoffCard>
-        </QuickCheckoffOverlay>
+                <ScrollView contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
+                  {habits.length === 0 ? (
+                    <View style={{ alignItems: 'center', marginVertical: 40 }}>
+                      <Sparkles size={40} color="#6B6280" style={{ marginBottom: 12 }} />
+                      <Text style={{ color: '#8E8E93', fontSize: 14, fontWeight: 'bold' }}>No tasks created yet</Text>
+                      <TouchableOpacity
+                        onPress={() => { setShowQuickCheckoff(false); onNavigateToTab('habits'); }}
+                        style={{ marginTop: 12, backgroundColor: '#FF7E47', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20 }}
+                      >
+                        <Text style={{ color: '#08080C', fontWeight: 'bold', fontSize: 12 }}>Go to Habits tab</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    habits.map(habit => {
+                      const isCompletedToday = habit.completions.includes(todayStr);
+                      return (
+                        <HabitCheckRow key={habit.id} completed={isCompletedToday}>
+                          <HabitPressableArea onPress={() => handleToggleHabitCompletion(habit.id)}>
+                            <CheckCircle completed={isCompletedToday} color={habit.color}>
+                              {isCompletedToday && <Check size={14} color="#08080A" strokeWidth={3} />}
+                            </CheckCircle>
+                            <HabitTextInfo>
+                              <HabitName completed={isCompletedToday}>{habit.name}</HabitName>
+                              <HabitUnit>{habit.smallestUnit}</HabitUnit>
+                            </HabitTextInfo>
+                          </HabitPressableArea>
+                          <HabitStreak>🔥 {habit.streakCount}d</HabitStreak>
+                        </HabitCheckRow>
+                      );
+                    })
+                  )}
+                </ScrollView>
+
+                <CloseQuickCheckoffButton onPress={() => setShowQuickCheckoff(false)}>
+                  <CloseQuickCheckoffButtonText>Close Checklist</CloseQuickCheckoffButtonText>
+                </CloseQuickCheckoffButton>
+              </QuickCheckoffCard>
+            </TouchableOpacity>
+          </QuickCheckoffOverlay>
+        </TouchableOpacity>
       </Modal>
+
+      {/* ─── User Journey Mission Road Map Modal ─── */}
+      <UserJourneyMapModal
+        visible={showUserJourneyModal}
+        onClose={() => setShowUserJourneyModal(false)}
+      />
 
       {/* ─── Widget Simulator Modal ─── */}
       <Modal
@@ -691,26 +788,30 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             <ModalSubtitle>Simulate widgets on a physical home screen</ModalSubtitle>
 
             {/* Widget tab selectors */}
-            <WidgetTabContainer>
-              <WidgetTab
-                active={activeWidgetType === 'progress'}
-                onPress={() => setActiveWidgetType('progress')}
-              >
-                <WidgetTabText active={activeWidgetType === 'progress'}>Focus Ring</WidgetTabText>
-              </WidgetTab>
-              <WidgetTab
-                active={activeWidgetType === 'checklist'}
-                onPress={() => setActiveWidgetType('checklist')}
-              >
-                <WidgetTabText active={activeWidgetType === 'checklist'}>Checklist</WidgetTabText>
-              </WidgetTab>
-              <WidgetTab
-                active={activeWidgetType === 'circadian'}
-                onPress={() => setActiveWidgetType('circadian')}
-              >
-                <WidgetTabText active={activeWidgetType === 'circadian'}>Circadian</WidgetTabText>
-              </WidgetTab>
-            </WidgetTabContainer>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={{ maxHeight: 42, marginBottom: 12 }}
+              contentContainerStyle={{ paddingHorizontal: 12 }}
+            >
+              {[
+                { id: 'companion', label: 'Companion' },
+                { id: 'habits', label: 'Habits' },
+                { id: 'timer', label: 'Timer' },
+                { id: 'stats', label: 'Stats' },
+                { id: 'soundscape', label: 'Mind Waves' },
+                { id: 'circadian', label: 'Circadian' },
+              ].map((tab) => (
+                <WidgetTab
+                  key={tab.id}
+                  active={activeWidgetType === tab.id}
+                  onPress={() => setActiveWidgetType(tab.id as any)}
+                  style={{ marginRight: 8, paddingHorizontal: 14 }}
+                >
+                  <WidgetTabText active={activeWidgetType === tab.id}>{tab.label}</WidgetTabText>
+                </WidgetTab>
+              ))}
+            </ScrollView>
 
             {/* Simulated Phone Shell */}
             <PhoneShell>
@@ -723,125 +824,425 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 </StatusIconsArea>
               </PhoneStatusBar>
 
-              <PhoneScreenContent>
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-                  {activeWidgetType === 'progress' && (
-                    <LiveWidgetBox color="#00F2FE">
-                      <WidgetHeaderRow>
-                        <WidgetIconGlow style={{ backgroundColor: 'rgba(0, 242, 254, 0.1)' }}>
-                          <Compass size={14} color="#00F2FE" />
-                        </WidgetIconGlow>
-                        <WidgetPill style={{ backgroundColor: '#00F2FE', color: '#08080C' }}>LIVE PROGRESS</WidgetPill>
-                      </WidgetHeaderRow>
-                      
-                      <WidgetContentBody>
-                        <WidgetCompanionImage
-                          source={
-                            activeCompanion === 'red_panda'
-                              ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
-                              : activeCompanion === 'brain'
-                              ? COMPANION_IMAGES.brain[getEmotionalState(fillProgress, companionState)]
-                              : COMPANION_IMAGES[activeCompanion].roster
-                          }
-                          resizeMode="contain"
-                        />
-                        <View style={{ marginLeft: 12, flex: 1 }}>
-                          <WidgetTextTitle style={{ color: '#00F2FE' }}>
-                            {activeCompanion === 'red_panda' ? 'Panda Focus' : activeCompanion === 'brain' ? 'Brain Focus' : 'Companion Focus'}
-                          </WidgetTextTitle>
-                          <WidgetTextSub>
-                            {timerIsActive ? `${formatTimer(timerTimeLeft)} left` : 'Ready to start!'}
-                          </WidgetTextSub>
-                          <WidgetProgressTrack>
-                            <WidgetProgressFill style={{ width: `${progressPercent * 100}%`, backgroundColor: '#00F2FE' }} />
-                          </WidgetProgressTrack>
+              <PhoneScreenContent style={{ backgroundColor: '#07070A' }}>
+                <ScrollView 
+                  style={{ flex: 1 }} 
+                  contentContainerStyle={{ paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center' }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {/* Category: Companion (Focus Ring) */}
+                  {activeWidgetType === 'companion' && (
+                    <>
+                      <WidgetSizeLabel>Small (2x2)</WidgetSizeLabel>
+                      <SmallWidget color="#00F2FE">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <Image
+                            source={
+                              activeCompanion === 'red_panda'
+                                ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
+                                : activeCompanion === 'brain'
+                                  ? COMPANION_IMAGES.brain[getEmotionalState(fillProgress, companionState)]
+                                  : COMPANION_IMAGES[activeCompanion]?.roster || COMPANION_IMAGES.red_panda.happy
+                            }
+                            style={{ width: 42, height: 42, borderRadius: 8, marginBottom: 4 }}
+                            resizeMode="contain"
+                          />
+                          <Text style={{ color: '#00F2FE', fontSize: 10, fontWeight: '800' }}>
+                            {Math.round(fillProgress * 100)}% Energy
+                          </Text>
                         </View>
-                      </WidgetContentBody>
-                      
-                      <WidgetInteractiveFooter>
-                        <WidgetButton onPress={handleStartTimer}>
-                          <Play size={10} color="#08080C" fill="#08080C" style={{ marginRight: 4 }} />
-                          <WidgetButtonText>{timerIsActive ? 'Pause' : 'Start Focus'}</WidgetButtonText>
-                        </WidgetButton>
-                      </WidgetInteractiveFooter>
-                    </LiveWidgetBox>
+                      </SmallWidget>
+
+                      <WidgetSizeLabel>Medium (4x2)</WidgetSizeLabel>
+                      <MediumWidget color="#00F2FE">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <WidgetIconGlow style={{ backgroundColor: 'rgba(0, 242, 254, 0.1)' }}>
+                            <Compass size={12} color="#00F2FE" />
+                          </WidgetIconGlow>
+                          <Text style={{ fontSize: 8, fontWeight: '800', color: '#08080C', backgroundColor: '#00F2FE', paddingVertical: 1, paddingHorizontal: 4, borderRadius: 4 }}>LIVE PROGRESS</Text>
+                        </WidgetHeaderRow>
+                        <WidgetContentBody style={{ paddingBottom: 0 }}>
+                          <Image
+                            source={
+                              activeCompanion === 'red_panda'
+                                ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
+                                : activeCompanion === 'brain'
+                                  ? COMPANION_IMAGES.brain[getEmotionalState(fillProgress, companionState)]
+                                  : COMPANION_IMAGES[activeCompanion]?.roster || COMPANION_IMAGES.red_panda.happy
+                            }
+                            style={{ width: 40, height: 40, borderRadius: 8 }}
+                            resizeMode="contain"
+                          />
+                          <View style={{ marginLeft: 10, flex: 1 }}>
+                            <Text style={{ color: '#00F2FE', fontSize: 12, fontWeight: '800' }}>
+                              {activeCompanion === 'red_panda' ? 'Panda Focus' : 'Companion'}
+                            </Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, fontWeight: '600', marginTop: 1 }}>
+                              {timerIsActive ? `${formatTimer(timerTimeLeft)} left` : 'Ready to start!'}
+                            </Text>
+                            <WidgetProgressTrack style={{ marginTop: 4, height: 3 }}>
+                              <WidgetProgressFill style={{ width: `${progressPercent * 100}%`, backgroundColor: '#00F2FE' }} />
+                            </WidgetProgressTrack>
+                          </View>
+                        </WidgetContentBody>
+                      </MediumWidget>
+
+                      <WidgetSizeLabel>Large (4x4)</WidgetSizeLabel>
+                      <LargeWidget color="#00F2FE">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <Text style={{ color: '#00F2FE', fontSize: 11, fontWeight: '800' }}>Companion Vitality</Text>
+                          <Star size={12} color="#00F2FE" fill="#00F2FE" />
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <Image
+                            source={
+                              activeCompanion === 'red_panda'
+                                ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
+                                : activeCompanion === 'brain'
+                                  ? COMPANION_IMAGES.brain[getEmotionalState(fillProgress, companionState)]
+                                  : COMPANION_IMAGES[activeCompanion]?.roster || COMPANION_IMAGES.red_panda.happy
+                            }
+                            style={{ width: 44, height: 44, borderRadius: 8 }}
+                            resizeMode="contain"
+                          />
+                          <View style={{ flex: 1, marginLeft: 10 }}>
+                            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>Status: {getEmotionalLabel(getEmotionalState(fillProgress, companionState))}</Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, marginTop: 1 }}>Energy sync: {Math.round(fillProgress * 100)}%</Text>
+                          </View>
+                        </View>
+                        <View style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 6 }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <Text style={{ color: '#8E8E93', fontSize: 9 }}>Focus Power</Text>
+                            <Text style={{ color: '#00F2FE', fontSize: 9, fontWeight: '800' }}>90%</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <Text style={{ color: '#8E8E93', fontSize: 9 }}>Calm Level</Text>
+                            <Text style={{ color: '#4ECDC4', fontSize: 9, fontWeight: '800' }}>75%</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: '#8E8E93', fontSize: 9 }}>Rest Index</Text>
+                            <Text style={{ color: '#9B7EDE', fontSize: 9, fontWeight: '800' }}>80%</Text>
+                          </View>
+                        </View>
+                      </LargeWidget>
+                    </>
                   )}
 
-                  {activeWidgetType === 'checklist' && (
-                    <LiveWidgetBox color="#FF7E47">
-                      <WidgetHeaderRow>
-                        <WidgetIconGlow style={{ backgroundColor: 'rgba(255, 126, 71, 0.1)' }}>
-                          <Star size={14} color="#FF7E47" fill="#FF7E47" />
-                        </WidgetIconGlow>
-                        <WidgetPill style={{ backgroundColor: '#FF7E47', color: '#08080C' }}>MICRO HABITS</WidgetPill>
-                      </WidgetHeaderRow>
-
-                      <WidgetContentBody style={{ paddingBottom: 0 }}>
-                        <WidgetCompanionImage
-                          source={
-                            activeCompanion === 'red_panda'
-                              ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
-                              : activeCompanion === 'brain'
-                              ? COMPANION_IMAGES.brain[getEmotionalState(fillProgress, companionState)]
-                              : COMPANION_IMAGES[activeCompanion].roster
-                          }
-                          resizeMode="contain"
-                          style={{ width: 48, height: 48 }}
-                        />
-                        <View style={{ marginLeft: 12, flex: 1 }}>
-                          <WidgetTextTitle style={{ color: '#FF7E47', fontSize: 13 }}>{completedHabitsCount} of {totalHabits} Done</WidgetTextTitle>
-                          <WidgetTextSub style={{ fontSize: 10 }}>Energy at {Math.round(fillProgress * 100)}%</WidgetTextSub>
+                  {/* Category: Habits */}
+                  {activeWidgetType === 'habits' && (
+                    <>
+                      <WidgetSizeLabel>Small (2x2)</WidgetSizeLabel>
+                      <SmallWidget color="#FF7E47">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <Star size={16} color="#FF7E47" fill="#FF7E47" style={{ marginBottom: 4 }} />
+                          <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '900' }}>{completedHabitsCount}/{habits.length}</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 8, fontWeight: '600', marginTop: 1 }}>Habits Done</Text>
                         </View>
-                      </WidgetContentBody>
+                      </SmallWidget>
 
-                      <WidgetChecklistContainer>
-                        {habits.slice(0, 3).map(habit => {
-                          const isCompleted = habit.completions.includes(todayStr);
-                          return (
-                            <WidgetCheckRow
-                              key={habit.id}
-                              onPress={() => handleToggleHabitCompletion(habit.id)}
-                            >
-                              <WidgetCheckCircle completed={isCompleted} color={habit.color}>
-                                {isCompleted && <Check size={8} color="#08080A" strokeWidth={3} />}
-                              </WidgetCheckCircle>
-                              <WidgetCheckText completed={isCompleted}>{habit.name}</WidgetCheckText>
-                            </WidgetCheckRow>
-                          );
-                        })}
-                      </WidgetChecklistContainer>
-                    </LiveWidgetBox>
+                      <WidgetSizeLabel>Medium (4x2)</WidgetSizeLabel>
+                      <MediumWidget color="#FF7E47">
+                        <WidgetHeaderRow style={{ marginBottom: 4 }}>
+                          <Text style={{ color: '#FF7E47', fontSize: 11, fontWeight: '800' }}>Habits Checklist</Text>
+                          <Check size={12} color="#FF7E47" />
+                        </WidgetHeaderRow>
+                        <WidgetChecklistContainer style={{ borderTopWidth: 0, paddingTop: 2, marginTop: 2 }}>
+                          {habits.slice(0, 2).map(habit => {
+                            const isCompleted = habit.completions.includes(todayStr);
+                            return (
+                              <WidgetCheckRow
+                                key={habit.id}
+                                onPress={() => handleToggleHabitCompletion(habit.id)}
+                                style={{ paddingVertical: 4 }}
+                              >
+                                <WidgetCheckCircle completed={isCompleted} color={habit.color} style={{ width: 12, height: 12, borderRadius: 6 }}>
+                                  {isCompleted && <Check size={6} color="#08080A" strokeWidth={4} />}
+                                </WidgetCheckCircle>
+                                <WidgetCheckText completed={isCompleted} style={{ fontSize: 10, marginLeft: 6 }}>{habit.name}</WidgetCheckText>
+                              </WidgetCheckRow>
+                            );
+                          })}
+                        </WidgetChecklistContainer>
+                      </MediumWidget>
+
+                      <WidgetSizeLabel>Large (4x4)</WidgetSizeLabel>
+                      <LargeWidget color="#FF7E47">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <Text style={{ color: '#FF7E47', fontSize: 11, fontWeight: '800' }}>Daily Habits</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Streak: 5🔥</Text>
+                        </WidgetHeaderRow>
+                        <WidgetChecklistContainer style={{ borderTopWidth: 0, paddingTop: 2, marginTop: 2 }}>
+                          {habits.slice(0, 3).map(habit => {
+                            const isCompleted = habit.completions.includes(todayStr);
+                            return (
+                              <WidgetCheckRow
+                                key={habit.id}
+                                onPress={() => handleToggleHabitCompletion(habit.id)}
+                                style={{ paddingVertical: 4 }}
+                              >
+                                <WidgetCheckCircle completed={isCompleted} color={habit.color} style={{ width: 12, height: 12, borderRadius: 6 }}>
+                                  {isCompleted && <Check size={6} color="#08080A" strokeWidth={4} />}
+                                </WidgetCheckCircle>
+                                <WidgetCheckText completed={isCompleted} style={{ fontSize: 10, marginLeft: 6 }}>{habit.name}</WidgetCheckText>
+                              </WidgetCheckRow>
+                            );
+                          })}
+                        </WidgetChecklistContainer>
+                        <View style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 6, marginTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Weekly Completion</Text>
+                          <View style={{ flexDirection: 'row' }}>
+                            {['M','T','W','T','F','S','S'].map((day, idx) => (
+                              <View key={idx} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: idx < 5 ? '#FF7E47' : 'rgba(255,255,255,0.1)', marginLeft: 3 }} />
+                            ))}
+                          </View>
+                        </View>
+                      </LargeWidget>
+                    </>
                   )}
 
+                  {/* Category: Timer */}
+                  {activeWidgetType === 'timer' && (
+                    <>
+                      <WidgetSizeLabel>Small (2x2)</WidgetSizeLabel>
+                      <SmallWidget color="#FFB347">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <Clock size={16} color="#FFB347" style={{ marginBottom: 4 }} />
+                          <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '900' }}>
+                            {formatTimer(timerTimeLeft)}
+                          </Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 8, fontWeight: '700', textTransform: 'uppercase', marginTop: 1 }}>
+                            {timerIsActive ? 'Focus' : 'Paused'}
+                          </Text>
+                        </View>
+                      </SmallWidget>
+
+                      <WidgetSizeLabel>Medium (4x2)</WidgetSizeLabel>
+                      <MediumWidget color="#FFB347">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <Text style={{ color: '#FFB347', fontSize: 11, fontWeight: '800' }}>Focus Pomodoro</Text>
+                          <Text style={{ fontSize: 8, fontWeight: '800', color: '#08080C', backgroundColor: '#FFB347', paddingVertical: 1, paddingHorizontal: 4, borderRadius: 4 }}>TIMER</Text>
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <View>
+                            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '900' }}>{formatTimer(timerTimeLeft)}</Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, marginTop: 1 }}>Phase: Focus State</Text>
+                          </View>
+                          <TouchableOpacity 
+                            onPress={handleStartTimer}
+                            style={{ backgroundColor: '#FFFFFF', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 10 }}
+                          >
+                            <Text style={{ color: '#08080C', fontSize: 9, fontWeight: '800' }}>{timerIsActive ? 'PAUSE' : 'START'}</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </MediumWidget>
+
+                      <WidgetSizeLabel>Large (4x4)</WidgetSizeLabel>
+                      <LargeWidget color="#FFB347">
+                        <WidgetHeaderRow style={{ marginBottom: 8 }}>
+                          <Text style={{ color: '#FFB347', fontSize: 11, fontWeight: '800' }}>Pomodoro Sessions</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Cycle 2 of 4</Text>
+                        </WidgetHeaderRow>
+                        <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 8 }}>
+                          <Text style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '900' }}>{formatTimer(timerTimeLeft)}</Text>
+                          <Text style={{ color: '#FFB347', fontSize: 9, fontWeight: '700', textTransform: 'uppercase', marginTop: 2, letterSpacing: 1 }}>Deep Focus Phase</Text>
+                        </View>
+                        <View style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 8, flexDirection: 'row', justifyContent: 'space-around' }}>
+                          <TouchableOpacity onPress={handleStartTimer} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Play size={10} color="#FFFFFF" style={{ marginRight: 4 }} />
+                            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>{timerIsActive ? 'Pause' : 'Resume'}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => dispatch(stopTimer())} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <RotateCcw size={10} color="#8E8E93" style={{ marginRight: 4 }} />
+                            <Text style={{ color: '#8E8E93', fontSize: 10, fontWeight: '700' }}>Reset</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </LargeWidget>
+                    </>
+                  )}
+
+                  {/* Category: Stats */}
+                  {activeWidgetType === 'stats' && (
+                    <>
+                      <WidgetSizeLabel>Small (2x2)</WidgetSizeLabel>
+                      <SmallWidget color="#38EF7D">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <BarChart2 size={16} color="#38EF7D" style={{ marginBottom: 4 }} />
+                          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '900' }}>
+                            {Math.round(totalFocusSeconds / 60)}m
+                          </Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 8, fontWeight: '700', marginTop: 1 }}>Tracked Today</Text>
+                        </View>
+                      </SmallWidget>
+
+                      <WidgetSizeLabel>Medium (4x2)</WidgetSizeLabel>
+                      <MediumWidget color="#38EF7D">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <Text style={{ color: '#38EF7D', fontSize: 11, fontWeight: '800' }}>Focus Analytics</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Today</Text>
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <View>
+                            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '900' }}>{Math.round(totalFocusSeconds / 60)} mins</Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, marginTop: 1 }}>Sessions: {completedPomodorosCount}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 35 }}>
+                            {[10, 20, 15, 30, 25].map((h, i) => (
+                              <View key={i} style={{ width: 4, height: h, backgroundColor: '#38EF7D', borderRadius: 2, marginLeft: 4 }} />
+                            ))}
+                          </View>
+                        </View>
+                      </MediumWidget>
+
+                      <WidgetSizeLabel>Large (4x4)</WidgetSizeLabel>
+                      <LargeWidget color="#38EF7D">
+                        <WidgetHeaderRow style={{ marginBottom: 8 }}>
+                          <Text style={{ color: '#38EF7D', fontSize: 11, fontWeight: '800' }}>Weekly Focus Activity</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Total: {Math.round(totalFocusSeconds / 60)}m</Text>
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 75, paddingHorizontal: 10, marginVertical: 6 }}>
+                          {[
+                            { day: 'M', val: 30 },
+                            { day: 'T', val: 50 },
+                            { day: 'W', val: 40 },
+                            { day: 'T', val: 80 },
+                            { day: 'F', val: 65 },
+                            { day: 'S', val: 20 },
+                            { day: 'S', val: 10 },
+                          ].map((item, idx) => (
+                            <View key={idx} style={{ alignItems: 'center' }}>
+                              <View style={{ width: 8, height: item.val, backgroundColor: '#38EF7D', borderRadius: 4 }} />
+                              <Text style={{ color: '#8E8E93', fontSize: 8, marginTop: 4, fontWeight: '700' }}>{item.day}</Text>
+                            </View>
+                          ))}
+                        </View>
+                        <View style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 6, flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Avg Focus Score</Text>
+                          <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '800' }}>85% (High)</Text>
+                        </View>
+                      </LargeWidget>
+                    </>
+                  )}
+
+                  {/* Category: Mind Waves */}
+                  {activeWidgetType === 'soundscape' && (
+                    <>
+                      <WidgetSizeLabel>Small (2x2)</WidgetSizeLabel>
+                      <SmallWidget color="#9B7EDE">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <Music size={16} color="#9B7EDE" style={{ marginBottom: 4 }} />
+                          <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800', textAlign: 'center' }} numberOfLines={1}>
+                            {activeSoundscape.toUpperCase()}
+                          </Text>
+                          <TouchableOpacity 
+                            onPress={() => dispatch(togglePlayback())}
+                            style={{ marginTop: 6, backgroundColor: 'rgba(155, 126, 222, 0.15)', padding: 4, borderRadius: 10 }}
+                          >
+                            {isPlaying ? <Pause size={10} color="#9B7EDE" /> : <Play size={10} color="#9B7EDE" fill="#9B7EDE" />}
+                          </TouchableOpacity>
+                        </View>
+                      </SmallWidget>
+
+                      <WidgetSizeLabel>Medium (4x2)</WidgetSizeLabel>
+                      <MediumWidget color="#9B7EDE">
+                        <WidgetHeaderRow style={{ marginBottom: 4 }}>
+                          <Text style={{ color: '#9B7EDE', fontSize: 11, fontWeight: '800' }}>Mind Waves Player</Text>
+                          <Music size={12} color="#9B7EDE" />
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <View style={{ flex: 1, marginRight: 8 }}>
+                            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800' }} numberOfLines={1}>
+                              {activeSoundscape.toUpperCase()}
+                            </Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, marginTop: 1 }}>Binaural Beats active</Text>
+                          </View>
+                          <TouchableOpacity 
+                            onPress={() => dispatch(togglePlayback())}
+                            style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' }}
+                          >
+                            {isPlaying ? <Pause size={10} color="#08080C" /> : <Play size={10} color="#08080C" fill="#08080C" style={{ marginLeft: 2 }} />}
+                          </TouchableOpacity>
+                        </View>
+                      </MediumWidget>
+
+                      <WidgetSizeLabel>Large (4x4)</WidgetSizeLabel>
+                      <LargeWidget color="#9B7EDE">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <Text style={{ color: '#9B7EDE', fontSize: 11, fontWeight: '800' }}>Mind Waves Controller</Text>
+                          <Volume2 size={12} color="#9B7EDE" />
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: 4 }}>
+                          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(155, 126, 222, 0.1)', justifyContent: 'center', alignItems: 'center' }}>
+                            <Music size={14} color="#9B7EDE" />
+                          </View>
+                          <View style={{ marginLeft: 10, flex: 1 }}>
+                            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '800' }}>{activeSoundscape.toUpperCase()}</Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, marginTop: 1 }}>Binaural audio layer active</Text>
+                          </View>
+                        </View>
+                        <View style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 8, flexDirection: 'row', justifyContent: 'space-around' }}>
+                          <TouchableOpacity onPress={() => dispatch(togglePlayback())} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            {isPlaying ? <Pause size={12} color="#FFFFFF" style={{ marginRight: 4 }} /> : <Play size={12} color="#FFFFFF" style={{ marginRight: 4 }} />}
+                            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '700' }}>{isPlaying ? 'Pause' : 'Play'}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => dispatch(setSoundscape('focus'))} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Compass size={12} color="#8E8E93" style={{ marginRight: 4 }} />
+                            <Text style={{ color: '#8E8E93', fontSize: 10, fontWeight: '700' }}>Focus Beat</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </LargeWidget>
+                    </>
+                  )}
+
+                  {/* Category: Circadian */}
                   {activeWidgetType === 'circadian' && (
-                    <LiveWidgetBox color="#FFB347">
-                      <WidgetHeaderRow>
-                        <WidgetIconGlow style={{ backgroundColor: 'rgba(255, 179, 71, 0.1)' }}>
-                          <Clock size={14} color="#FFB347" />
-                        </WidgetIconGlow>
-                        <WidgetPill style={{ backgroundColor: '#FFB347', color: '#08080C' }}>CIRCADIAN STATUS</WidgetPill>
-                      </WidgetHeaderRow>
-
-                      <WidgetContentBody>
-                        <WidgetCompanionImage
-                          source={
-                            activeCompanion === 'red_panda'
-                              ? COMPANION_IMAGES.red_panda[getEmotionalState(fillProgress, companionState)]
-                              : COMPANION_IMAGES[activeCompanion].roster
-                          }
-                          resizeMode="contain"
-                        />
-                        <View style={{ marginLeft: 12, flex: 1 }}>
-                          <WidgetTextTitle style={{ color: '#FFB347' }}>Energy Peak</WidgetTextTitle>
-                          <WidgetTextSub style={{ fontSize: 11 }}>High Alert Focus</WidgetTextSub>
-                          <WidgetTextSub style={{ opacity: 0.6, fontSize: 9, marginTop: 4 }}>Circadian rhythm synced.</WidgetTextSub>
+                    <>
+                      <WidgetSizeLabel>Small (2x2)</WidgetSizeLabel>
+                      <SmallWidget color="#E91E63">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                          <Activity size={16} color="#E91E63" style={{ marginBottom: 4 }} />
+                          <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '900', textAlign: 'center' }}>HIGH ALERT</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 8, fontWeight: '700', marginTop: 1 }}>Circadian Sync</Text>
                         </View>
-                      </WidgetContentBody>
-                    </LiveWidgetBox>
+                      </SmallWidget>
+
+                      <WidgetSizeLabel>Medium (4x2)</WidgetSizeLabel>
+                      <MediumWidget color="#E91E63">
+                        <WidgetHeaderRow style={{ marginBottom: 6 }}>
+                          <Text style={{ color: '#E91E63', fontSize: 11, fontWeight: '800' }}>Circadian Status</Text>
+                          <Activity size={12} color="#E91E63" />
+                        </WidgetHeaderRow>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <View>
+                            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>Energy Peak</Text>
+                            <Text style={{ color: '#8E8E93', fontSize: 9, marginTop: 1 }}>High Alertness Period active</Text>
+                          </View>
+                          <Text style={{ color: '#E91E63', fontSize: 9, fontWeight: '800' }}>SYNCED</Text>
+                        </View>
+                      </MediumWidget>
+
+                      <WidgetSizeLabel>Large (4x4)</WidgetSizeLabel>
+                      <LargeWidget color="#E91E63">
+                        <WidgetHeaderRow style={{ marginBottom: 8 }}>
+                          <Text style={{ color: '#E91E63', fontSize: 11, fontWeight: '800' }}>Circadian Cycles</Text>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Peak: 3:00 PM</Text>
+                        </WidgetHeaderRow>
+                        <View style={{ height: 50, justifyContent: 'center', marginVertical: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: '100%', justifyContent: 'space-around' }}>
+                            {[10, 25, 45, 60, 45, 25, 10, 15, 30].map((h, i) => (
+                              <View key={i} style={{ width: 6, height: h, backgroundColor: i === 3 ? '#E91E63' : 'rgba(233, 30, 99, 0.2)', borderRadius: 3 }} />
+                            ))}
+                          </View>
+                        </View>
+                        <View style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.08)', paddingTop: 6, marginTop: 6, flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={{ color: '#8E8E93', fontSize: 9 }}>Next Dip (Slump)</Text>
+                          <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '800' }}>In 2h 15m (5:15 PM)</Text>
+                        </View>
+                      </LargeWidget>
+                    </>
                   )}
 
-                  <PhoneHintText>All widget actions sync with your companion energy in real-time!</PhoneHintText>
-                </View>
+                  <PhoneHintText>All widget actions sync with your companion energy and settings in real-time!</PhoneHintText>
+                </ScrollView>
               </PhoneScreenContent>
             </PhoneShell>
 
@@ -1366,8 +1767,44 @@ const PhoneHintText = styled.Text`
   padding: 0 16px;
 `;
 
+const WidgetContainer = styled(GlassCard)<{ color: string }>`
+  background-color: rgba(14, 14, 18, 0.95);
+  border-width: 1.2px;
+  border-color: ${props => props.color};
+  padding: 10px;
+  margin-bottom: 12px;
+  align-self: center;
+  overflow: hidden;
+`;
+
+const SmallWidget = styled(WidgetContainer)`
+  width: 110px;
+  height: 110px;
+`;
+
+const MediumWidget = styled(WidgetContainer)`
+  width: 220px;
+  height: 110px;
+`;
+
+const LargeWidget = styled(WidgetContainer)`
+  width: 220px;
+  height: 200px;
+`;
+
+const WidgetSizeLabel = styled.Text`
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 6px;
+  margin-top: 4px;
+  text-align: center;
+`;
+
 // Live widget box mockup
-const LiveWidgetBox = styled(GlassCard)<{ color: string }>`
+const LiveWidgetBox = styled(GlassCard) <{ color: string }>`
   width: 100%;
   padding: 16px;
   background-color: rgba(14, 14, 18, 0.95);

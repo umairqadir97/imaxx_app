@@ -1,8 +1,57 @@
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tracksData from '../data/tracks.json';
+
+// Dynamically resolve backend host for macbook and mobile physical devices (Android/iOS)
+export const getBackendUrl = (): string => {
+  if (Platform.OS === 'web') {
+    return 'http://localhost:3000';
+  }
+
+  // 1. Try stack trace resolution (100% reliable on physical devices and Expo Go)
+  try {
+    const err = new Error();
+    const stack = err.stack || '';
+    const match = stack.match(/(https?|exp):\/\/([0-9.]+):[0-9]+/);
+    if (match && match[2]) {
+      const host = match[2];
+      if (host !== '127.0.0.1' && host !== 'localhost') {
+        console.log(`[HostResolution] Resolved via stack trace: http://${host}:3000`);
+        return `http://${host}:3000`;
+      }
+    }
+  } catch (e) {
+    // Fail silently
+  }
+  
+  // 2. Fallback to NativeModules.SourceCode
+  try {
+    const scriptURL = NativeModules.SourceCode?.scriptURL || '';
+    if (scriptURL && scriptURL.includes('://')) {
+      const hostAndPort = scriptURL.split('://')[1];
+      let host = hostAndPort.split(':')[0];
+      if (host) {
+        if (host === 'localhost' || host === '127.0.0.1') {
+          if (Platform.OS === 'android') {
+            host = '10.0.2.2'; // Loopback to host laptop from Android emulator
+          }
+        }
+        console.log(`[HostResolution] Resolved via SourceCode: http://${host}:3000`);
+        return `http://${host}:3000`;
+      }
+    }
+  } catch (e) {
+    console.log('[HostResolution] Failed to resolve Metro host:', e);
+  }
+  
+  // Fallback for Android emulator if scriptURL is missing/invalid
+  if (Platform.OS === 'android') {
+    return 'http://10.0.2.2:3000';
+  }
+  return 'http://localhost:3000'; // Fallback
+};
 
 const documentDir = (FileSystem as any).documentDirectory || '';
 const cacheDirConst = (FileSystem as any).cacheDirectory || '';
@@ -57,7 +106,7 @@ export const useAudioDownloadManager = () => {
         console.log('[Onboarding] Starting background download of default-download tracks...');
 
         // Fetch tracks listing from backend server
-        const response = await fetch('http://localhost:3000/api/tracks');
+        const response = await fetch(`${getBackendUrl()}/api/tracks`);
         if (!response.ok) throw new Error('Failed to fetch track config');
         
         const tracks = await response.json();
@@ -79,7 +128,7 @@ export const useAudioDownloadManager = () => {
           console.log(`[Onboarding] Downloading ${track.id} in background...`);
           
           // Get stream URL from backend API
-          const urlRes = await fetch(`http://localhost:3000/api/tracks/${track.id}/stream-url`);
+          const urlRes = await fetch(`${getBackendUrl()}/api/tracks/${track.id}/stream-url`);
           const urlData = await urlRes.json();
           const downloadUrl = urlData.streamUrl;
 
@@ -133,6 +182,103 @@ export const useAudioDownloadManager = () => {
 };
 
 // -------------------------------------------------------------
+// Web Physical Storage Helpers (IndexedDB & Origin Private File System - OPFS)
+// -------------------------------------------------------------
+const openIndexedDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') {
+      reject(new Error('IndexedDB is not supported on this platform.'));
+      return;
+    }
+    const request = indexedDB.open('imaxx_physical_storage', 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains('audio_tracks')) {
+        db.createObjectStore('audio_tracks');
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+};
+
+const getTrackFromWebPhysicalStorage = async (trackId: string): Promise<string | null> => {
+  if (Platform.OS !== 'web') return null;
+
+  // 1. Try reading from OPFS (Origin Private File System)
+  try {
+    if (navigator.storage && navigator.storage.getDirectory) {
+      const root = await navigator.storage.getDirectory();
+      const fileHandle = await root.getFileHandle(`track_${trackId}.mp3`, { create: false });
+      const file = await fileHandle.getFile();
+      if (file && file.size > 0) {
+        console.log(`[OPFS Hit] Loaded track '${trackId}' from physical device storage.`);
+        return URL.createObjectURL(file);
+      }
+    }
+  } catch (e) {
+    // Fallback to IndexedDB if OPFS file is not found or fails
+  }
+
+  // 2. Try reading from IndexedDB
+  try {
+    const db = await openIndexedDB();
+    return new Promise((resolve) => {
+      const transaction = db.transaction('audio_tracks', 'readonly');
+      const store = transaction.objectStore('audio_tracks');
+      const request = store.get(trackId);
+      request.onsuccess = () => {
+        const blob = request.result;
+        if (blob instanceof Blob) {
+          console.log(`[IndexedDB Hit] Loaded track '${trackId}' from physical database storage.`);
+          resolve(URL.createObjectURL(blob));
+        } else {
+          resolve(null);
+        }
+      };
+      request.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    return null;
+  }
+};
+
+const saveTrackToWebPhysicalStorage = async (trackId: string, blob: Blob): Promise<void> => {
+  if (Platform.OS !== 'web') return;
+
+  // 1. Try writing to OPFS
+  try {
+    if (navigator.storage && navigator.storage.getDirectory) {
+      const root = await navigator.storage.getDirectory();
+      const fileHandle = await root.getFileHandle(`track_${trackId}.mp3`, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      console.log(`[OPFS Saved] Track '${trackId}' written to physical device storage.`);
+    }
+  } catch (e) {
+    console.log('[OPFS Save Error] Falling back to IndexedDB:', e);
+  }
+
+  // 2. Write to IndexedDB
+  try {
+    const db = await openIndexedDB();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction('audio_tracks', 'readwrite');
+      const store = transaction.objectStore('audio_tracks');
+      const request = store.put(blob, trackId);
+      request.onsuccess = () => {
+        console.log(`[IndexedDB Saved] Track '${trackId}' written to physical database storage.`);
+        resolve();
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (e) {
+    console.error('[IndexedDB Save Failed]:', e);
+  }
+};
+
+// -------------------------------------------------------------
 // Playback Fetch-and-Stream Handler
 // -------------------------------------------------------------
 export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
@@ -143,19 +289,65 @@ export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
     counts[trackId] = (counts[trackId] || 0) + 1;
     await AsyncStorage.setItem('iMaxx_track_play_counts', JSON.stringify(counts));
 
-    // Optional: Notify backend database of play count increment
-    fetch(`http://localhost:3000/api/tracks/${trackId}/play-increment`, { method: 'POST' }).catch(() => {});
+    // Notify backend server of play count increment
+    fetch(`${getBackendUrl()}/api/tracks/${trackId}/play-increment`, { method: 'POST' }).catch(() => {});
   } catch (e) {
     // Ignore counter errors
   }
 
-  // Resolve stream URL dynamically from tracks.json configuration file
-  const activeTrack = (tracksData as any[]).find(t => t.id === trackId);
-  const streamUrl = activeTrack?.url || `https://cdn.dopamind.app/audio/tracks/${trackId}-v1.mp3`;
+  // Resolve static fallback URL from tracks.json
+  const activeTrack = (tracksData as any[]).find(t => t.id === trackId || String((t as any).num) === trackId);
+  const fallbackUrl = activeTrack?.url || `https://cdn.dopamind.app/audio/tracks/${trackId}-v1.mp3`;
+
+  // Helper to fetch S3 Signed URL from backend server
+  const fetchSignedUrl = async (): Promise<string> => {
+    try {
+      const response = await fetch(`${getBackendUrl()}/api/tracks/${trackId}/signed-url`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.streamUrl) {
+          console.log(`[Backend SignedURL] ${data.cached ? 'Cached' : 'Fresh'} URL obtained for track #${data.trackNum || trackId}`);
+          return data.streamUrl;
+        }
+      }
+    } catch (e) {
+      console.log('[Backend SignedURL] Failed to reach server, fallback to default URL:', e);
+    }
+    return fallbackUrl;
+  };
 
   if (Platform.OS === 'web') {
-    // Web platform browser handles progressive streaming and cache headers natively
-    return streamUrl;
+    try {
+      // 1. Check physical device storage (OPFS / IndexedDB)
+      const physicalUrl = await getTrackFromWebPhysicalStorage(trackId);
+      if (physicalUrl) {
+        return physicalUrl;
+      }
+      
+      // 2. Cache Miss: Fetch signed S3 URL from backend to play instantly
+      console.log(`[Physical Storage Miss] Fetching signed URL for track '${trackId}'...`);
+      const signedStreamUrl = await fetchSignedUrl();
+      
+      // Concurrently download and save to physical device storage in the background
+      const proxyDownloadUrl = `${getBackendUrl()}/api/tracks/${trackId}/download`;
+      console.log(`[Web Background Cache] Downloading track '${trackId}' to physical storage from CORS-friendly proxy...`);
+      fetch(proxyDownloadUrl)
+        .then(res => {
+          if (res.ok) {
+            return res.blob();
+          }
+          throw new Error('Proxy download failed');
+        })
+        .then(blob => {
+          return saveTrackToWebPhysicalStorage(trackId, blob);
+        })
+        .catch(err => console.log('Web background physical download failed:', err));
+        
+      return signedStreamUrl;
+    } catch (e) {
+      console.log('Web physical storage exception, streaming directly:', e);
+      return await fetchSignedUrl();
+    }
   }
 
   // Mobile platforms local encrypted caching layer
@@ -163,11 +355,23 @@ export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
   const encryptedFileUri = cacheDir + `${trackId}.enc`;
   const decryptedTempUri = cacheDirConst + `${trackId}_playback_temp.mp3`;
 
+  // Proactively ensure audio_cache directory exists to prevent java.io.FileNotFoundException
+  try {
+    const dirInfo = await FileSystem.getInfoAsync(cacheDir);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true });
+      console.log('[Directory Setup] Created missing audio_cache directory.');
+    }
+  } catch (e) {
+    console.log('[Directory Setup] Failed to ensure audio_cache directory exists:', e);
+  }
+
   try {
     const fileInfo = await FileSystem.getInfoAsync(encryptedFileUri);
     
-    if (fileInfo.exists) {
-      console.log(`[Cache Hit] Decrypting ${trackId} for playback...`);
+    // 1. LOCAL STORAGE HIT: Play directly from local storage!
+    if (fileInfo.exists && fileInfo.size && fileInfo.size > 0) {
+      console.log(`[Local Storage Hit] Playing ${trackId} directly from local encrypted storage...`);
       
       // Read encrypted header
       const encHeader = await FileSystem.readAsStringAsync(encryptedFileUri, {
@@ -175,12 +379,12 @@ export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
         length: HEADER_ENCRYPT_SIZE
       });
       const decHeader = toggleHeaderCrypto(encHeader);
-
+ 
       // Write decrypted header to temporary playback file
       await FileSystem.writeAsStringAsync(decryptedTempUri, decHeader, {
         encoding: FileSystem.EncodingType.Base64
       });
-
+ 
       // Append remaining original file body
       const encBody = await FileSystem.readAsStringAsync(encryptedFileUri, {
         encoding: FileSystem.EncodingType.Base64,
@@ -190,36 +394,47 @@ export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
         encoding: FileSystem.EncodingType.Base64,
         append: true
       });
-
+ 
       return decryptedTempUri;
     } else {
-      console.log(`[Cache Miss] Streaming ${trackId} instantly and downloading in background...`);
+      // 2. LOCAL STORAGE MISS: Fetch signed URL from backend, play immediately & download to local storage
+      console.log(`[Local Storage Miss] Fetching signed URL for ${trackId}...`);
+      const signedStreamUrl = await fetchSignedUrl();
+ 
+      console.log(`[Local Storage Miss] Streaming ${trackId} immediately and downloading to local storage in background...`);
       
-      // Start background cache task so it's ready next time
-      backgroundCacheTask(trackId, streamUrl, encryptedFileUri);
+      // Start background download & encryption so future plays load 100% offline from local storage
+      backgroundCacheTask(trackId, signedStreamUrl, encryptedFileUri);
       
-      // Return CDN stream url to play instantly (TikTok style)
-      return streamUrl;
+      // Return signed URL for instant playback
+      return signedStreamUrl;
     }
   } catch (err) {
-    console.log('Cache read failure, streaming directly:', err);
-    return streamUrl;
+    console.log('Local storage read failure, falling back to network stream:', err);
+    return await fetchSignedUrl();
   }
 };
-
+ 
 // Background file caching/encryption helper to prevent locking UI
 const backgroundCacheTask = async (trackId: string, downloadUrl: string, targetEncUri: string) => {
   try {
+    // Proactively ensure target folder exists before writing
+    const cacheDir = documentDir + 'audio_cache/';
+    const dirInfo = await FileSystem.getInfoAsync(cacheDir);
+    if (!dirInfo.exists) {
+      await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true });
+    }
+
     const tempUri = documentDir + `${trackId}_temp_bg.mp3`;
     await FileSystem.downloadAsync(downloadUrl, tempUri);
-
+ 
     // Encrypt header
     const rawHeader = await FileSystem.readAsStringAsync(tempUri, {
       encoding: FileSystem.EncodingType.Base64,
       length: HEADER_ENCRYPT_SIZE
     });
     const encryptedHeader = toggleHeaderCrypto(rawHeader);
-
+ 
     // Write encrypted header
     await FileSystem.writeAsStringAsync(targetEncUri, encryptedHeader, {
       encoding: FileSystem.EncodingType.Base64
@@ -260,15 +475,26 @@ export const getOrDownloadImage = async (trackId: string, remoteUrl: string): Pr
       await FileSystem.makeDirectoryAsync(imageCacheDir, { intermediates: true });
     }
 
+    const cachedUrlKey = `iMaxx_cached_img_url_${trackId}`;
+    const lastCachedUrl = await AsyncStorage.getItem(cachedUrlKey);
     const fileInfo = await FileSystem.getInfoAsync(localImageUri);
-    if (fileInfo.exists) {
+
+    if (fileInfo.exists && lastCachedUrl === remoteUrl) {
       return localImageUri;
     } else {
-      // Download image in the background
-      console.log(`[Image Cache] Caching image for ${trackId} in background...`);
-      FileSystem.downloadAsync(remoteUrl, localImageUri).catch(e => {
-        console.log('[Image Cache] Download failed:', e);
-      });
+      // Clean up old file if remote image URL changed (invalidation)
+      if (fileInfo.exists) {
+        await FileSystem.deleteAsync(localImageUri, { idempotent: true });
+      }
+      
+      console.log(`[Image Cache] Caching new image for ${trackId} in background: ${remoteUrl}`);
+      FileSystem.downloadAsync(remoteUrl, localImageUri)
+        .then(() => {
+          AsyncStorage.setItem(cachedUrlKey, remoteUrl);
+        })
+        .catch(e => {
+          console.log('[Image Cache] Download failed:', e);
+        });
       return remoteUrl; // Return remote URL immediately for instant loading
     }
   } catch (err) {

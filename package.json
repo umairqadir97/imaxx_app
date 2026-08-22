@@ -20,12 +20,15 @@
     "react-native-reanimated": "4.5.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
-    "react-native-webview": "13.16.1"
+    "react-native-web-webview": "^1.0.2",
+    "react-native-webview": "13.16.1",
+    "react-native-youtube-iframe": "^2.4.1"
   },
   "devDependencies": {
     "@reduxjs/toolkit": "^2.12.0",
     "@types/react": "~19.2.2",
     "@types/styled-components-react-native": "^5.2.5",
+    "electron": "^43.2.0",
     "expo-dev-client": "~57.0.5",
     "lucide-react-native": "^1.23.0",
     "react-redux": "^9.3.0",
@@ -36,7 +39,10 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "server": "node server.js",
+    "server:dev": "node server.js",
+    "electron": "electron electron-main.js"
   },
   "private": true
 }

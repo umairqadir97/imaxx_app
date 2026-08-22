@@ -115,14 +115,14 @@ const PulsingRing: React.FC<{ maxScale: number; delay: number }> = ({ maxScale, 
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // NOTE TO USER: Adjust 'duration' (currently 4000ms) inside withTiming here to change the speed of the radar waves. Lower duration is faster.
+      // NOTE TO USER: Adjust 'duration' (currently 7000ms) inside withTiming here to change the speed of the radar waves. Lower duration is faster.
       scale.value = withRepeat(
-        withTiming(maxScale, { duration: 4000, easing: Easing.out(Easing.ease) }),
+        withTiming(maxScale, { duration: 7000, easing: Easing.out(Easing.ease) }),
         -1,
         false
       );
       opacity.value = withRepeat(
-        withTiming(0, { duration: 4000, easing: Easing.out(Easing.ease) }),
+        withTiming(0, { duration: 7000, easing: Easing.out(Easing.ease) }),
         -1,
         false
       );
@@ -143,13 +143,13 @@ export const RadarWaveBackground: React.FC = () => {
     <AbsoluteCanvas pointerEvents="none" style={{ justifyContent: 'center', alignItems: 'center' }}>
       {/* Set A (Group 1) */}
       <PulsingRing maxScale={3.4} delay={0} />
-      <PulsingRing maxScale={3.4} delay={350} />
-      <PulsingRing maxScale={3.4} delay={700} />
+      <PulsingRing maxScale={3.4} delay={800} />
+      <PulsingRing maxScale={3.4} delay={1600} />
 
-      {/* Set B (Group 2 - starts 2 seconds later, before Set A disappears) */}
-      <PulsingRing maxScale={3.4} delay={2000} />
-      <PulsingRing maxScale={3.4} delay={2350} />
-      <PulsingRing maxScale={3.4} delay={2700} />
+      {/* Set B (Group 2 - starts 3.5 seconds later, before Set A disappears) */}
+      <PulsingRing maxScale={3.4} delay={3500} />
+      <PulsingRing maxScale={3.4} delay={4300} />
+      <PulsingRing maxScale={3.4} delay={5100} />
     </AbsoluteCanvas>
   );
 };
@@ -345,12 +345,12 @@ const FlipCardDigits = React.memo<FlipCardDigitsProps>(
         <SplitCardContainer>
           {/* Static background top — shows current digit top half */}
           <CardHalfTop>
-            <FlipNumberText numberOfLines={1}>{displayTop}</FlipNumberText>
+            <FlipNumberText numberOfLines={1} style={{ top: 0, left: 0 }}>{displayTop}</FlipNumberText>
           </CardHalfTop>
 
           {/* Static background bottom — shows current digit bottom half */}
           <CardHalfBottom>
-            <FlipNumberText numberOfLines={1} style={{ top: -55 }}>{displayBottom}</FlipNumberText>
+            <FlipNumberText numberOfLines={1} style={{ top: -55, left: 0 }}>{displayBottom}</FlipNumberText>
           </CardHalfBottom>
 
           {/* Animated top flap — folds away (shows prev digit top half) */}
@@ -359,16 +359,16 @@ const FlipCardDigits = React.memo<FlipCardDigitsProps>(
             borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: '#121217',
             borderWidth: 1.5, borderColor: '#1E1E26', borderBottomWidth: 0
           }, topFlapStyle]}>
-            <FlipNumberText numberOfLines={1}>{displayTop}</FlipNumberText>
+            <FlipNumberText numberOfLines={1} style={{ top: 0, left: 0 }}>{displayTop}</FlipNumberText>
           </RNAnimated.View>
 
           {/* Animated bottom flap — unfolds in (shows new digit bottom half) */}
           <RNAnimated.View style={[{
-            position: 'absolute', bottom: 0, left: 0, width: 90, height: 55, overflow: 'hidden', zIndex: 3,
+            position: 'absolute', top: 55, left: 0, width: 90, height: 55, overflow: 'hidden', zIndex: 3,
             borderBottomLeftRadius: 14, borderBottomRightRadius: 14, backgroundColor: '#121217',
             borderWidth: 1.5, borderColor: '#1E1E26', borderTopWidth: 0
           }, bottomFlapStyle]}>
-            <FlipNumberText numberOfLines={1} style={{ top: -55 }}>{nextDigit}</FlipNumberText>
+            <FlipNumberText numberOfLines={1} style={{ top: -55, left: 0 }}>{nextDigit}</FlipNumberText>
           </RNAnimated.View>
 
           {/* Divider Line */}
@@ -948,21 +948,21 @@ export const FocusTimerTab: React.FC = () => {
             const activeDaysCount = weeklyFocusMinutes.filter(m => m > 0).length || 1;
             const totalDaysActive = completedPomodorosCount > 0 ? Math.max(activeDaysCount, Math.ceil(completedPomodorosCount / 3)) : 1;
 
-            const todayMins = weeklyFocusMinutes[new Date().getDay()] || 0;
+            const todayMins = Math.round(weeklyFocusMinutes[new Date().getDay()] || 0);
             const todayH = Math.floor(todayMins / 60);
             const todayM = todayMins % 60;
             const todayFocusStr = todayH > 0 ? `${todayH}h ${todayM}m` : `${todayM}m`;
 
             const accumH = Math.floor(totalFocusSeconds / 3600);
             const accumM = Math.floor((totalFocusSeconds % 3600) / 60);
-            const accumFocusStr = `${accumH}h ${accumM}m`;
+            const accumFocusStr = accumH > 0 || accumM > 0 ? `${accumH}h ${accumM}m` : '0m';
 
-            const weeklyMins = weeklyFocusMinutes.reduce((acc, m) => acc + m, 0);
+            const weeklyMins = Math.round(weeklyFocusMinutes.reduce((acc, m) => acc + m, 0));
             const weeklyH = Math.floor(weeklyMins / 60);
             const weeklyM = weeklyMins % 60;
-            const weeklyFocusStr = `${weeklyH}h ${weeklyM}m`;
+            const weeklyFocusStr = weeklyH > 0 || weeklyM > 0 ? `${weeklyH}h ${weeklyM}m` : '0m';
 
-            const catStats = (categoryFocusSeconds || { Work: 600 * 3600, Study: 450 * 3600, Meditate: 120 * 3600, Fitness: 80 * 3600, Code: 200 * 3600, Relax: 90 * 3600 }) as Record<string, number>;
+            const catStats = (categoryFocusSeconds || { Work: 0, Study: 0, Meditate: 0, Fitness: 0, Code: 0, Relax: 0 }) as Record<string, number>;
             const totalCatSeconds = Object.values(catStats).reduce((acc: number, val: number) => acc + val, 0) || 1;
             const sortedCategories = (Object.entries(catStats) as [string, number][]).sort((a, b) => b[1] - a[1]);
 
@@ -1309,7 +1309,7 @@ const CardHalfTop = styled(CardHalf)`
 `;
 
 const CardHalfBottom = styled(CardHalf)`
-  bottom: 0;
+  top: 55px;
   border-top-width: 0px;
   border-bottom-left-radius: 14px;
   border-bottom-right-radius: 14px;
@@ -1344,6 +1344,8 @@ const FlipNumberText = styled.Text`
   font-size: 64px;
   font-weight: 800;
   text-align: center;
+  text-align-vertical: center;
+  include-font-padding: false;
   line-height: 110px;
   height: 110px;
   width: 90px;

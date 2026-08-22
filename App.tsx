@@ -80,69 +80,24 @@ const MainAppContent: React.FC = () => {
   // Tab sequences for horizontal swiping
   const TABS: ('home' | 'sleep' | 'double' | 'habits')[] = ['home', 'sleep', 'double', 'habits'];
 
-  // Tab bar hiding / visibility states and animations
+  // Tab bar is permanently visible on both Android and iOS
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
   const tabBarY = useRef(new Animated.Value(0)).current;
-  const inactivityTimer = useRef<any>(null);
 
+  // Prevent auto-hiding tab bar completely
   const resetInactivityTimer = () => {
-    // Show tab bar with animation
     setIsTabBarVisible(true);
     Animated.timing(tabBarY, {
       toValue: 0,
-      duration: 250,
+      duration: 150,
       useNativeDriver: true,
     }).start();
-
-    // Only auto-hide on Android as requested
-    if (Platform.OS !== 'android') return;
-
-    if (inactivityTimer.current) {
-      clearTimeout(inactivityTimer.current);
-    }
-
-    inactivityTimer.current = setTimeout(() => {
-      // Don't auto-hide if any modal/overlay sheet is open
-      const isAnyModalOpen = activeTab === 'relax' || showSettings || showScenarios || showPaywall || showTimer;
-      if (!isAnyModalOpen) {
-        setIsTabBarVisible(false);
-        Animated.timing(tabBarY, {
-          toValue: 100, // Translate down out of sight
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      }
-    }, 5000);
   };
 
-  // Reset/run inactivity timer on mount or state changes
+  // Reset tab bar visibility on tab/modal change
   useEffect(() => {
     resetInactivityTimer();
-    return () => {
-      if (inactivityTimer.current) {
-        clearTimeout(inactivityTimer.current);
-      }
-    };
   }, [showSettings, showScenarios, showPaywall, showTimer, activeTab]);
-
-  // Automatically slide down/hide tab bar on Relax screen when audio starts playing
-  useEffect(() => {
-    if (activeTab === 'relax' && isPlaying) {
-      setIsTabBarVisible(false);
-      Animated.timing(tabBarY, {
-        toValue: 100, // Slide down
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      setIsTabBarVisible(true);
-      Animated.timing(tabBarY, {
-        toValue: 0, // Slide up
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isPlaying, activeTab]);
 
   // PanResponder to handle swiping up from bottom to show navbar
   const mainPanResponder = useRef(
@@ -183,7 +138,10 @@ const MainAppContent: React.FC = () => {
           dispatch(hydrateHabits(JSON.parse(habitsData)));
         }
         if (audioData) {
-          dispatch(hydrateAudio(JSON.parse(audioData)));
+          const parsed = JSON.parse(audioData);
+          parsed.timerEndTime = null;
+          parsed.timerIsActive = false;
+          dispatch(hydrateAudio(parsed));
         }
       } catch (err) {
         console.log('Error loading state:', err);
@@ -209,9 +167,14 @@ const MainAppContent: React.FC = () => {
         totalFocusSeconds: audioState.totalFocusSeconds,
         weeklyFocusMinutes: audioState.weeklyFocusMinutes,
         categoryFocusSeconds: audioState.categoryFocusSeconds,
+        trackBoosts: audioState.trackBoosts,
+        globalBoost: audioState.globalBoost,
+        eqAmbient: audioState.eqAmbient,
+        eqTempo: audioState.eqTempo,
+        eqFocus: audioState.eqFocus,
       }));
     }
-  }, [habitsState.habits, habitsState.isOnboardingCompleted, habitsState.selectedStruggles, habitsState.focusScoreTotal, habitsState.listeningTimeTotal, audioState.completedPomodorosCount, audioState.totalFocusSeconds, audioState.weeklyFocusMinutes, audioState.categoryFocusSeconds, isHydrated]);
+  }, [habitsState.habits, habitsState.isOnboardingCompleted, habitsState.selectedStruggles, habitsState.focusScoreTotal, habitsState.listeningTimeTotal, audioState.completedPomodorosCount, audioState.totalFocusSeconds, audioState.weeklyFocusMinutes, audioState.categoryFocusSeconds, audioState.trackBoosts, audioState.globalBoost, audioState.eqAmbient, audioState.eqTempo, audioState.eqFocus, isHydrated]);
 
   // Real-time ticking system
   useEffect(() => {
@@ -402,7 +365,7 @@ const ContentContainer = styled.View`
 
 const MiniPlayerContainer = styled.View`
   position: absolute;
-  bottom: 74px; /* Sits exactly on top of the tab bar */
+  bottom: ${Platform.OS === 'android' ? '118px' : '74px'};
   left: 0;
   right: 0;
   z-index: 90;
@@ -410,13 +373,13 @@ const MiniPlayerContainer = styled.View`
 
 const BottomTabBar = styled(Animated.View)`
   flex-direction: row;
-  height: 74px;
+  height: ${Platform.OS === 'android' ? '118px' : '74px'};
   background-color: #111116;
   border-top-width: 1px;
   border-top-color: #1E1E26;
   justify-content: space-around;
   align-items: center;
-  padding-bottom: 8px;
+  padding-bottom: ${Platform.OS === 'android' ? '48px' : '8px'};
   position: relative;
   z-index: 100;
 `;

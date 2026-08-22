@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dimensions, Animated, Modal, View, Text, PanResponder, Image, TouchableWithoutFeedback, ActivityIndicator, Platform } from 'react-native';
 
-// Safe import for WebView to prevent web issues
+// Safe import for WebView and YoutubePlayer to prevent web issues
 let WebViewComponent: any = null;
+let YoutubePlayerComponent: any = null;
 if (Platform.OS !== 'web') {
   try {
     WebViewComponent = require('react-native-webview').WebView;
   } catch (e) {
     console.log('React Native WebView failed to load dynamically:', e);
+  }
+  try {
+    YoutubePlayerComponent = require('react-native-youtube-iframe').default;
+  } catch (e) {
+    console.log('react-native-youtube-iframe failed to load dynamically:', e);
   }
 }
 import styled from 'styled-components/native';
@@ -21,7 +27,7 @@ import Reanimated, {
   Easing
 } from 'react-native-reanimated';
 import { useAppDispatch, useAppSelector } from '../store';
-import { togglePlayback, setSoundscape, setVolume, startTimer, stopTimer, setYTAdPlaying, resetAudioState } from '../store/audioSlice';
+import { togglePlayback, setSoundscape, setVolume, startTimer, stopTimer, setYTAdPlaying, resetAudioState, setTrackBoost, setGlobalBoost, setEqAmbient, setEqTempo, setEqFocus } from '../store/audioSlice';
 import { Waveform } from '../components/Waveform';
 import { theme } from '../theme/colors';
 import tracksData from '../data/tracks.json';
@@ -442,6 +448,53 @@ const TunerModalContainer = styled.TouchableOpacity`
   shadow-radius: 12px;
 `;
 
+const BoostButtonsRow = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10px;
+`;
+
+const BoostButton = styled.TouchableOpacity<{ selected: boolean }>`
+  flex: 1;
+  background-color: ${props => props.selected ? '#FF7E47' : 'rgba(255, 255, 255, 0.05)'};
+  padding-vertical: 10px;
+  margin-horizontal: 4px;
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+  border-width: 1px;
+  border-color: ${props => props.selected ? '#FF7E47' : 'rgba(255, 255, 255, 0.08)'};
+`;
+
+const BoostButtonText = styled.Text<{ selected: boolean }>`
+  color: ${props => props.selected ? '#FFFFFF' : '#8E8E93'};
+  font-size: 13px;
+  font-weight: ${props => props.selected ? '700' : '500'};
+`;
+
+const BoostSubRow = styled.View`
+  flex-direction: row;
+  justify-content: flex-end;
+  margin-top: 8px;
+  margin-right: 4px;
+`;
+
+const SetForAllButton = styled.TouchableOpacity`
+  background-color: rgba(255, 255, 255, 0.04);
+  padding-horizontal: 10px;
+  padding-vertical: 4px;
+  border-radius: 6px;
+  border-width: 0.5px;
+  border-color: rgba(255, 255, 255, 0.08);
+`;
+
+const SetForAllText = styled.Text`
+  color: #4ECDC4;
+  font-size: 11px;
+  font-weight: 600;
+`;
+
+
 const ModalHeaderRow = styled.View`
   flex-direction: row;
   justify-content: space-between;
@@ -565,9 +618,81 @@ const GestureIndicatorBar = styled.View`
 // Component Props and implementation
 // -------------------------------------------------------------
 
-// -------------------------------------------------------------
-// Component Props and implementation
-// -------------------------------------------------------------
+interface InteractiveSliderProps {
+  value: number;
+  onChange: (val: number) => void;
+  color: string;
+}
+
+const InteractiveSlider: React.FC<InteractiveSliderProps> = ({ value, onChange, color }) => {
+  const [width, setWidth] = useState(0);
+  const startValue = useRef(0);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt, gestureState) => {
+        const { locationX } = evt.nativeEvent;
+        if (width > 0) {
+          const val = Math.max(0, Math.min(1, locationX / width));
+          onChange(val);
+          startValue.current = val;
+        }
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (width > 0) {
+          const delta = gestureState.dx / width;
+          const newValue = Math.max(0, Math.min(1, startValue.current + delta));
+          onChange(newValue);
+        }
+      }
+    })
+  ).current;
+
+  return (
+    <View 
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width || 1)}
+      {...panResponder.panHandlers}
+      style={{
+        height: 32,
+        justifyContent: 'center',
+        width: '100%',
+        position: 'relative'
+      }}
+    >
+      <View style={{
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        width: '100%',
+        position: 'relative'
+      }}>
+        <View style={{
+          height: '100%',
+          borderRadius: 3,
+          backgroundColor: color,
+          width: `${value * 100}%`
+        }} />
+      </View>
+      <View style={{
+        position: 'absolute',
+        left: `${value * 100}%`,
+        marginLeft: -10,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: '#FFFFFF',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.35,
+        shadowRadius: 2,
+        elevation: 3
+      }} />
+    </View>
+  );
+};
+
 interface SoundPlayerProps {
   onClose: () => void;
   onOpenTimerSheet: () => void;
@@ -576,7 +701,7 @@ interface SoundPlayerProps {
 
 export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSheet, onOpenScenarios }) => {
   const dispatch = useAppDispatch();
-  const { isPlaying, activeSoundscape, activeScenarioId, volume, timerIsActive, timerTimeLeft, scenariosList, isYTAdPlaying } = useAppSelector((state) => state.audio);
+  const { isPlaying, activeSoundscape, activeScenarioId, volume, timerIsActive, timerTimeLeft, scenariosList, isYTAdPlaying, isLoading, isJustStartedPlaying, trackBoosts, globalBoost, eqAmbient, eqTempo, eqFocus } = useAppSelector((state) => state.audio);
 
   const activeTrack = tracksData.find(t => t.id === (activeScenarioId || activeSoundscape));
   const isYouTubeTest = activeTrack?.source === 'youtube';
@@ -654,6 +779,17 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
         dispatch(setYTAdPlaying(true));
       } else if (data.event === 'yt_ad_end') {
         dispatch(setYTAdPlaying(false));
+      } else if (data.event === 'yt_error') {
+        // Error codes 150/152/153 = embed blocked by video owner or YouTube bot detection.
+        // Treat as a permanent loading failure — hide spinner, show static fallback image.
+        setIsYTLoading(false);
+        if (ytLoadingTimeoutRef.current) {
+          clearTimeout(ytLoadingTimeoutRef.current);
+          ytLoadingTimeoutRef.current = null;
+        }
+        // Force the static overlay to stay visible by marking as still "loading" so showYTStaticOverlay = true
+        // We reuse isYTAdPlaying=true as a proxy to keep the cover image visible in error state.
+        dispatch(setYTAdPlaying(true));
       }
     } catch (e) {}
   };
@@ -677,13 +813,22 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
+          * { box-sizing: border-box; }
           body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; position: relative; }
-          #player {
+          #player-wrap {
             position: absolute;
-            height: 112%;
-            width: ${isFull ? '354%' : '200%'};
-            left: ${isFull ? '-127%' : '-50%'};
-            top: -6%;
+            /* Zoom the 16:9 iframe so it fills the square circle perfectly:
+               height is set to 100% of the container.
+               width is 178% of height to maintain 16:9 at square size,
+               then we push it left by half the overflow so it's centred. */
+            width: ${isFull ? '354%' : '178%'};
+            height: 100%;
+            left: ${isFull ? '-127%' : '-39%'};
+            top: 0;
+          }
+          #player-wrap iframe, #player-wrap > div {
+            width: 100% !important;
+            height: 100% !important;
             border: none;
           }
           .blocker {
@@ -696,7 +841,7 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
       </head>
       <body>
         <div class="blocker"></div>
-        <div id="player"></div>
+        <div id="player-wrap"><div id="player"></div></div>
         <script>
           var tag = document.createElement('script');
           tag.src = "https://www.youtube.com/iframe_api";
@@ -707,27 +852,32 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
           var isReady = false;
           var pendingCommand = "${isPlaying ? 'play' : 'pause'}";
 
+          var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
           function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
               videoId: '${ytVideoId}',
               playerVars: {
                 autoplay: ${isPlaying ? 1 : 0},
-                controls: 1,
+                controls: 0,
                 rel: 0,
                 showinfo: 0,
                 iv_load_policy: 3,
-                mute: 0,
+                // iOS WKWebView blocks unmuted autoplay — must start muted, then unmute in onReady
+                mute: isIOS ? 1 : 0,
                 loop: 1,
                 playlist: '${ytVideoId}',
                 playsinline: 1,
                 cc_load_policy: 0,
                 disablekb: 1,
                 fs: 0,
-                origin: window.location.origin || '*'
+                enablejsapi: 1,
+                modestbranding: 1
               },
               events: {
                 onReady: onPlayerReady,
-                onStateChange: onPlayerStateChange
+                onStateChange: onPlayerStateChange,
+                onError: onPlayerError
               }
             });
           }
@@ -758,10 +908,19 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
             } catch(e) {}
           }
 
+          function onPlayerError(event) {
+            // Propagate error code to React Native so we can show fallback image
+            sendToParent({ event: 'yt_error', code: event.data });
+          }
+
           function onPlayerReady(event) {
             isReady = true;
             disableCaptions();
             setInterval(disableCaptions, 1000);
+            // iOS: we started muted to get autoplay permission — unmute immediately now that playback is granted
+            if (isIOS) {
+              try { player.unMute(); } catch(e) {}
+            }
             
             // Ad checking & auto-skip interval
             setInterval(function() {
@@ -878,6 +1037,89 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
       );
     }
 
+    if ((Platform.OS as string) !== 'web' && YoutubePlayerComponent) {
+      const targetHeight = isFull ? SCREEN_HEIGHT : 218;
+      const targetWidth = Math.ceil(targetHeight * (16 / 9));
+      const marginLeft = isFull ? Math.floor((SCREEN_WIDTH - targetWidth) / 2) : Math.floor((218 - targetWidth) / 2);
+
+      return (
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          overflow: 'hidden',
+          backgroundColor: '#000',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <View 
+            pointerEvents="none"
+            style={{
+              width: targetWidth,
+              height: targetHeight,
+              marginLeft: marginLeft,
+            }}
+          >
+            <YoutubePlayerComponent
+              height={targetHeight}
+              width={targetWidth}
+              play={isPlaying}
+              mute={true}
+              videoId={ytVideoId}
+              baseUrl="https://www.youtube.com"
+              onReady={() => {
+                setIsYTLoading(false);
+                if (ytLoadingTimeoutRef.current) {
+                  clearTimeout(ytLoadingTimeoutRef.current);
+                  ytLoadingTimeoutRef.current = null;
+                }
+              }}
+              onChangeState={(state: string) => {
+                if (state === 'playing') {
+                  setIsYTLoading(false);
+                  if (ytLoadingTimeoutRef.current) {
+                    clearTimeout(ytLoadingTimeoutRef.current);
+                    ytLoadingTimeoutRef.current = null;
+                  }
+                }
+              }}
+              onError={(error: string) => {
+                console.log('YoutubePlayer native error:', error);
+                setIsYTLoading(false);
+                if (ytLoadingTimeoutRef.current) {
+                  clearTimeout(ytLoadingTimeoutRef.current);
+                  ytLoadingTimeoutRef.current = null;
+                }
+              }}
+              initialPlayerParams={{
+                controls: false,
+                modestbranding: true,
+                rel: false,
+                loop: true,
+                playlist: ytVideoId,
+                preventFullScreen: true,
+              }}
+              webViewProps={{
+                allowsInlineMediaPlayback: true,
+                mediaPlaybackRequiresUserAction: false,
+                androidLayerType: 'hardware',
+                pointerEvents: 'none',
+                baseUrl: 'https://www.youtube.com',
+                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                originWhitelist: ['*'],
+                domStorageEnabled: true,
+                javaScriptEnabled: true,
+                thirdPartyCookiesEnabled: true,
+                sharedCookiesEnabled: true,
+              }}
+            />
+          </View>
+        </View>
+      );
+    }
+
     if (WebViewComponent) {
       return (
         <View style={{
@@ -899,9 +1141,15 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
             }}
             scrollEnabled={false}
             allowsFullscreenVideo={false}
+            allowsInlineMediaPlayback={true}
+            originWhitelist={['*']}
+            mixedContentMode="always"
+            userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
             mediaPlaybackRequiresUserAction={false}
             domStorageEnabled={true}
             javaScriptEnabled={true}
+            thirdPartyCookiesEnabled={true}
+            sharedCookiesEnabled={true}
             onMessage={(event: any) => {
               handleYTEvent(event.nativeEvent.data);
             }}
@@ -919,9 +1167,6 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
 
   // Somatic visual states
   const [showTuner, setShowTuner] = useState(false);
-  const [eqAmbient, setEqAmbient] = useState(0.5);
-  const [eqTempo, setEqTempo] = useState(0.4);
-  const [eqFocus, setEqFocus] = useState(0.7);
   const [isImmersionActive, setIsImmersionActive] = useState(false);
 
   // standard Animated.Value (useRef) to prevent Reanimated mismatch crashes
@@ -930,6 +1175,29 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
   const fullScreenOpacity = useRef(new Animated.Value(0)).current;
   const controlsOpacity = useRef(new Animated.Value(1)).current;
   const hintOpacity = useRef(new Animated.Value(0)).current;
+
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isJustStartedPlaying) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(blinkAnim, {
+            toValue: 0.25,
+            duration: 350,
+            useNativeDriver: true,
+          }),
+          Animated.timing(blinkAnim, {
+            toValue: 1.0,
+            duration: 350,
+            useNativeDriver: true,
+          })
+        ])
+      ).start();
+    } else {
+      blinkAnim.setValue(1);
+    }
+  }, [isJustStartedPlaying]);
 
   const soundscapesList = [
     { id: 'focus', name: 'Focus', baseColor: '#FF7E47' },
@@ -942,26 +1210,26 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
   const enterImmersion = () => {
     setIsImmersionActive(true);
     Animated.parallel([
-      Animated.timing(circleScale, { toValue: 3.5, duration: 900, useNativeDriver: true }),
+      Animated.timing(circleScale, { toValue: 3.5, duration: 900, useNativeDriver: false }),
       Animated.timing(borderRadiusAnim, { toValue: 0, duration: 900, useNativeDriver: false }),
-      Animated.timing(fullScreenOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
-      Animated.timing(controlsOpacity, { toValue: 0, duration: 400, useNativeDriver: true })
+      Animated.timing(fullScreenOpacity, { toValue: 1, duration: 900, useNativeDriver: false }),
+      Animated.timing(controlsOpacity, { toValue: 0, duration: 400, useNativeDriver: false })
     ]).start(() => {
       // Fade hint text in then out
       Animated.sequence([
-        Animated.timing(hintOpacity, { toValue: 0.8, duration: 450, useNativeDriver: true }),
+        Animated.timing(hintOpacity, { toValue: 0.8, duration: 450, useNativeDriver: false }),
         Animated.delay(2000),
-        Animated.timing(hintOpacity, { toValue: 0, duration: 600, useNativeDriver: true })
+        Animated.timing(hintOpacity, { toValue: 0, duration: 600, useNativeDriver: false })
       ]).start();
     });
   };
 
   const exitImmersion = () => {
     Animated.parallel([
-      Animated.timing(circleScale, { toValue: 1, duration: 750, useNativeDriver: true }),
+      Animated.timing(circleScale, { toValue: 1, duration: 750, useNativeDriver: false }),
       Animated.timing(borderRadiusAnim, { toValue: 109, duration: 750, useNativeDriver: false }),
-      Animated.timing(fullScreenOpacity, { toValue: 0, duration: 750, useNativeDriver: true }),
-      Animated.timing(controlsOpacity, { toValue: 1, duration: 550, useNativeDriver: true })
+      Animated.timing(fullScreenOpacity, { toValue: 0, duration: 750, useNativeDriver: false }),
+      Animated.timing(controlsOpacity, { toValue: 1, duration: 550, useNativeDriver: false })
     ]).start(() => {
       setIsImmersionActive(false);
     });
@@ -1101,6 +1369,24 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
                     resizeMode="cover"
                   />
                 )}
+                {(isYTLoading || isLoading) && (
+                  <View style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    zIndex: 6,
+                  }}>
+                    <ActivityIndicator size="large" color="#FF7E47" />
+                    <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '700', marginTop: 10, letterSpacing: 1.5 }}>
+                      {isYouTubeTest ? 'FETCHING VIDEO' : 'FETCHING AUDIO'}
+                    </Text>
+                  </View>
+                )}
               </PortalInnerView>
             </TouchableWithoutFeedback>
           </AnimatedPortalCircle>
@@ -1111,11 +1397,15 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
           <Animated.View style={{ opacity: controlsOpacity, alignItems: 'center', marginTop: 50 }}>
             <PortalLabel>{displayLabel}</PortalLabel>
             <PortalSub>{displaySub}</PortalSub>
-            {isYouTubeTest && isYTLoading && (
+            {(isYTLoading || isLoading) ? (
               <Text style={{ color: '#FFB347', fontSize: 13, fontWeight: '600', marginTop: 8 }}>
                 loading...
               </Text>
-            )}
+            ) : isJustStartedPlaying ? (
+              <Animated.Text style={{ color: '#4ECDC4', fontSize: 13, fontWeight: '700', marginTop: 8, textTransform: 'uppercase', letterSpacing: 1, opacity: blinkAnim }}>
+                playing now!
+              </Animated.Text>
+            ) : null}
           </Animated.View>
         )}
       </ArtSection>
@@ -1175,13 +1465,16 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
           
           <ActionButton onPress={() => {
             dispatch(resetAudioState());
-            onClose();
           }}>
             <RotateCcw size={18} color="#FFFFFF" style={{ opacity: 0.8 }} />
           </ActionButton>
 
           <ActionButton onPress={onOpenTimerSheet} active={timerIsActive}>
             <Timer size={18} color={timerIsActive ? '#FF7E47' : '#FFFFFF'} style={{ opacity: 0.8 }} />
+          </ActionButton>
+
+          <ActionButton onPress={() => setShowTuner(true)}>
+            <Volume2 size={18} color="#FFFFFF" style={{ opacity: 0.8 }} />
           </ActionButton>
         </ControlsBar>
       </Animated.View>
@@ -1218,10 +1511,11 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
                 <SliderLabel>Ambient Intensity (Noise Layer)</SliderLabel>
                 <SliderValue>{Math.round(eqAmbient * 100)}%</SliderValue>
               </SliderLabelRow>
-              <MockSliderTrack onPress={(e) => setEqAmbient(0.4)}>
-                <MockSliderFill width={eqAmbient * 100} color="#FF7E47" />
-                <MockSliderThumb left={eqAmbient * 100} />
-              </MockSliderTrack>
+              <InteractiveSlider 
+                value={eqAmbient} 
+                onChange={(val) => dispatch(setEqAmbient(val))} 
+                color="#FF7E47" 
+              />
             </SliderGroup>
 
             <SliderGroup>
@@ -1229,10 +1523,11 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
                 <SliderLabel>Melody / Rhythm Beat (Heart Tempos)</SliderLabel>
                 <SliderValue>{Math.round(eqTempo * 100)}%</SliderValue>
               </SliderLabelRow>
-              <MockSliderTrack onPress={(e) => setEqTempo(0.6)}>
-                <MockSliderFill width={eqTempo * 100} color="#4ECDC4" />
-                <MockSliderThumb left={eqTempo * 100} />
-              </MockSliderTrack>
+              <InteractiveSlider 
+                value={eqTempo} 
+                onChange={(val) => dispatch(setEqTempo(val))} 
+                color="#4ECDC4" 
+              />
             </SliderGroup>
 
             <SliderGroup>
@@ -1240,13 +1535,47 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
                 <SliderLabel>High Frequency (Focus Sparkles)</SliderLabel>
                 <SliderValue>{Math.round(eqFocus * 100)}%</SliderValue>
               </SliderLabelRow>
-              <MockSliderTrack onPress={(e) => setEqFocus(0.85)}>
-                <MockSliderFill width={eqFocus * 100} color="#9B7EDE" />
-                <MockSliderThumb left={eqFocus * 100} />
-              </MockSliderTrack>
+              <InteractiveSlider 
+                value={eqFocus} 
+                onChange={(val) => dispatch(setEqFocus(val))} 
+                color="#9B7EDE" 
+              />
             </SliderGroup>
 
-            <VolumeControlRow>
+            {/* Decibel Booster Controls */}
+            <SliderGroup>
+              <SliderLabelRow>
+                <SliderLabel>Decibel Booster (Enhance Volume)</SliderLabel>
+                <SliderValue>{Math.round((trackBoosts[activeTrack?.id || 'focus'] || globalBoost || 1.0) * 100)}%</SliderValue>
+              </SliderLabelRow>
+              <BoostButtonsRow>
+                {[1.0, 1.25, 1.5, 2.0].map((b) => {
+                  const currentBoost = trackBoosts[activeTrack?.id || 'focus'] || 1.0;
+                  const isSelected = currentBoost === b;
+                  return (
+                    <BoostButton 
+                      key={b} 
+                      selected={isSelected} 
+                      onPress={() => dispatch(setTrackBoost({ trackId: activeTrack?.id || 'focus', boost: b }))}
+                    >
+                      <BoostButtonText selected={isSelected}>
+                        {b === 1.0 ? 'Normal' : `+${Math.round((b - 1) * 100)}%`}
+                      </BoostButtonText>
+                    </BoostButton>
+                  );
+                })}
+              </BoostButtonsRow>
+              <BoostSubRow>
+                <SetForAllButton onPress={() => {
+                  const currentBoost = trackBoosts[activeTrack?.id || 'focus'] || 1.0;
+                  dispatch(setGlobalBoost(currentBoost));
+                }}>
+                  <SetForAllText>Set multiplier for all tracks</SetForAllText>
+                </SetForAllButton>
+              </BoostSubRow>
+            </SliderGroup>
+
+            <VolumeControlRow style={{ marginTop: 8 }}>
               <Volume2 size={16} color="#8E8E93" />
               <VolumeText>Dynamic Volume Auto-adjusts with heart rate</VolumeText>
             </VolumeControlRow>
