@@ -85,11 +85,24 @@ export const useAudioEngine = () => {
       
       if (!webAudioRef.current) {
         webAudioRef.current = new window.Audio();
-        webAudioRef.current.crossOrigin = 'anonymous'; // Allow cross-origin Web Audio API gain processing
         webAudioRef.current.loop = true;
+      }
+
+      // Check if URL is local blob/file (CORS safe for MediaElementSource)
+      const isLocalUrl = url.startsWith('blob:') || url.startsWith('file:') || url.startsWith('data:');
+      if (isLocalUrl) {
+        try {
+          webAudioRef.current.crossOrigin = 'anonymous';
+        } catch (e) {}
+      } else {
+        try {
+          webAudioRef.current.removeAttribute('crossorigin');
+        } catch (e) {}
+      }
+
+      if (currentTrackIdRef.current !== currentKey || webAudioRef.current.src !== url) {
         webAudioRef.current.src = url;
-      } else if (currentTrackIdRef.current !== currentKey) {
-        webAudioRef.current.src = url;
+        webAudioRef.current.load();
       }
 
       currentTrackIdRef.current = currentKey;
@@ -99,7 +112,7 @@ export const useAudioEngine = () => {
       const boost = trackBoosts[trackId] || globalBoost || 1.0;
       const multiplier = getVolumeBoostMultiplier(boost);
       
-      // Route through Web Audio API to amplify sound output past 100% (volume * boost can exceed 1.0)
+      // Route through Web Audio API for local URLs or fallback to direct element volume
       if (typeof window !== 'undefined' && (window.AudioContext || (window as any).webkitAudioContext)) {
         try {
           if (!audioCtxRef.current) {
@@ -114,45 +127,51 @@ export const useAudioEngine = () => {
           if (!lowshelfRef.current) {
             lowshelfRef.current = audioCtxRef.current.createBiquadFilter();
             lowshelfRef.current.type = 'lowshelf';
-            lowshelfRef.current.frequency.value = 320; // Ambient / Noise layer
+            lowshelfRef.current.frequency.value = 320;
           }
           if (!peakingRef.current) {
             peakingRef.current = audioCtxRef.current.createBiquadFilter();
             peakingRef.current.type = 'peaking';
-            peakingRef.current.frequency.value = 1000; // Melody / Tempos mid-range
+            peakingRef.current.frequency.value = 1000;
             peakingRef.current.Q.value = 1.0;
           }
           if (!highshelfRef.current) {
             highshelfRef.current = audioCtxRef.current.createBiquadFilter();
             highshelfRef.current.type = 'highshelf';
-            highshelfRef.current.frequency.value = 3200; // Sparkles / High frequency
+            highshelfRef.current.frequency.value = 3200;
           }
 
-          if (!sourceNodeRef.current) {
-            sourceNodeRef.current = audioCtxRef.current.createMediaElementSource(webAudioRef.current);
+          // Attach Web Audio API source node for local blob URLs
+          if (!sourceNodeRef.current && isLocalUrl) {
+            try {
+              sourceNodeRef.current = audioCtxRef.current.createMediaElementSource(webAudioRef.current);
+              sourceNodeRef.current.connect(lowshelfRef.current);
+              lowshelfRef.current.connect(peakingRef.current);
+              peakingRef.current.connect(highshelfRef.current);
+              highshelfRef.current.connect(gainNodeRef.current);
+              gainNodeRef.current.connect(audioCtxRef.current.destination);
+            } catch (mediaErr) {
+              console.log('[WebAudio Node] Routing notice, using direct audio output:', mediaErr);
+              sourceNodeRef.current = null;
+            }
+          }
+          
+          if (sourceNodeRef.current && gainNodeRef.current) {
+            webAudioRef.current.volume = 1.0;
+            gainNodeRef.current.gain.setValueAtTime(volume * multiplier, audioCtxRef.current.currentTime);
+
+            lowshelfRef.current.gain.setValueAtTime((eqAmbient - 0.5) * 24, audioCtxRef.current.currentTime);
+            peakingRef.current.gain.setValueAtTime((eqTempo - 0.5) * 24, audioCtxRef.current.currentTime);
+            highshelfRef.current.gain.setValueAtTime((eqFocus - 0.5) * 24, audioCtxRef.current.currentTime);
             
-            // Connect in series: Source -> Low-shelf -> Peaking -> High-shelf -> Gain -> Output
-            sourceNodeRef.current.connect(lowshelfRef.current);
-            lowshelfRef.current.connect(peakingRef.current);
-            peakingRef.current.connect(highshelfRef.current);
-            highshelfRef.current.connect(gainNodeRef.current);
-            gainNodeRef.current.connect(audioCtxRef.current.destination);
-          }
-          
-          // Hardware element volume set to maximum (1.0), gain node does the scaling/boosting
-          webAudioRef.current.volume = 1.0;
-          gainNodeRef.current.gain.setValueAtTime(volume * multiplier, audioCtxRef.current.currentTime);
-
-          // Apply EQ gains dynamically (map 0..1 to -12dB .. +12dB boost range)
-          lowshelfRef.current.gain.setValueAtTime((eqAmbient - 0.5) * 24, audioCtxRef.current.currentTime);
-          peakingRef.current.gain.setValueAtTime((eqTempo - 0.5) * 24, audioCtxRef.current.currentTime);
-          highshelfRef.current.gain.setValueAtTime((eqFocus - 0.5) * 24, audioCtxRef.current.currentTime);
-          
-          if (audioCtxRef.current.state === 'suspended') {
-            audioCtxRef.current.resume();
+            if (audioCtxRef.current.state === 'suspended') {
+              audioCtxRef.current.resume();
+            }
+          } else {
+            // Direct HTML5 Audio volume control for direct streaming CDN/CloudFront URLs
+            webAudioRef.current.volume = Math.min(1.0, volume * multiplier);
           }
         } catch (e) {
-          // Fallback if media routing fails
           webAudioRef.current.volume = Math.min(1.0, volume * multiplier);
         }
       } else {

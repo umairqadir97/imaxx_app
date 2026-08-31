@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Modal, ScrollView, TouchableOpacity, Dimensions, TextInput, TouchableWithoutFeedback, PanResponder, Text, Animated } from 'react-native';
+import { Modal, ScrollView, TouchableOpacity, Dimensions, TextInput, TouchableWithoutFeedback, PanResponder, Text, Animated, View } from 'react-native';
 import styled from 'styled-components/native';
-import { Plus, Check, Trash2, Heart, Moon, Compass, Sparkles, X, Settings as SettingsIcon, BarChart2, Edit2, Calendar, Clock, Grid, List, Layers, Bell, Folder, ChevronLeft, ChevronRight, Wallet, Wind, Brain, Shield, DollarSign, Send, CupSoda, Coffee, Droplets, Cpu, BookOpen, Activity, Dumbbell, Star, Music } from 'lucide-react-native';
+import { Plus, Check, Trash2, Heart, Moon, Compass, Sparkles, X, Settings as SettingsIcon, BarChart2, Edit2, Calendar, Clock, Grid, List, Layers, Bell, Folder, ChevronLeft, ChevronRight, Wallet, Wind, Brain, Shield, DollarSign, Send, CupSoda, Coffee, Droplets, Cpu, BookOpen, Activity, Dumbbell, Star, Music, Lock } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch, useAppSelector } from '../store';
 import { addHabit, editHabit, toggleHabitCompletion, deleteHabit, setViewMode, setHabitsSubTab } from '../store/habitSlice';
@@ -23,7 +23,7 @@ const ICONS_LIST = [
 const COLORS_PALETTE = [
   '#FF6B6B', '#FF8E53', '#FFB347', '#FFD043', '#A8E6CF', '#4ECDC4',
   '#38EF7D', '#00F2FE', '#33A3FF', '#4C6EF5', '#748FFC', '#9B7EDE',
-  '#C4A8F5', '#FF7EB9', '#FF4F81', '#7B5FB5', '#90A4AE', '#D7CCC8'
+  '#BA68C8', '#FF7EB9', '#E056FD', '#686DE0', '#30336B', '#535C68'
 ];
 
 const SUGGESTIONS_DATA = {
@@ -53,11 +53,13 @@ const SUGGESTIONS_DATA = {
 
 interface HabitTrackerProps {
   onOpenSettings: () => void;
+  onOpenPaywall?: () => void;
 }
 
-export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) => {
+export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings, onOpenPaywall }) => {
   const dispatch = useAppDispatch();
   const habits = useAppSelector((state) => state.habits.habits);
+  const isPremiumUnlocked = useAppSelector((state) => state.audio.isPremiumUnlocked);
 
   const viewMode = useAppSelector((state) => state.habits.viewMode);
 
@@ -159,6 +161,10 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) =>
   };
 
   const handleToggleCompletion = (habitId: string, date: string) => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall && onOpenPaywall();
+      return;
+    }
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
       const wasCompleted = habit.completions.includes(date);
@@ -361,6 +367,10 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) =>
 
   // Trigger Creator/Editor Modal
   const openCreator = () => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall && onOpenPaywall();
+      return;
+    }
     setIsEditing(false);
     setHabitName('');
     setHabitDesc('');
@@ -532,7 +542,7 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) =>
         </LogoTextArea>
 
         <RightActions>
-          <ActionButton onPress={() => setShowAnalyticsModal(true)}>
+          <ActionButton onPress={() => isPremiumUnlocked ? setShowAnalyticsModal(true) : onOpenPaywall && onOpenPaywall()}>
             <BarChart2 size={18} color="#FFFFFF" />
           </ActionButton>
           <AddCircleButton onPress={openCreator}>
@@ -541,7 +551,37 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ onOpenSettings }) =>
         </RightActions>
       </HeaderBar>
 
-      <ScrollContent showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
+      {/* Free Plan Lock Banner */}
+      {!isPremiumUnlocked && (
+        <TouchableOpacity
+          style={{
+            backgroundColor: 'rgba(255, 126, 71, 0.12)',
+            borderWidth: 1,
+            borderColor: 'rgba(255, 126, 71, 0.35)',
+            borderRadius: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            marginHorizontal: 20,
+            marginTop: 10,
+            marginBottom: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+          onPress={() => onOpenPaywall && onOpenPaywall()}
+          activeOpacity={0.85}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Lock size={16} color="#FF7E47" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#FFFFFF', fontSize: 13 }}>
+              🔒 Free Plan — <Text style={{ color: '#FF7E47', fontWeight: 'bold' }}>Upgrade to iMaxx Premium</Text> to unlock Habit Maxxing
+            </Text>
+          </View>
+          <ChevronRight size={16} color="#FF7E47" />
+        </TouchableOpacity>
+      )}
+
+      <ScrollContent showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }} style={{ opacity: !isPremiumUnlocked ? 0.45 : 1 }}>
         {/* Today's Progress Report Card (Image 1) */}
         {(() => {
           const completedTodayCount = habits.filter(h => h.completions.includes(todayStr)).length;

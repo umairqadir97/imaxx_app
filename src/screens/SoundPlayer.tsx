@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dimensions, Animated, Modal, View, Text, PanResponder, Image, TouchableWithoutFeedback, ActivityIndicator, Platform } from 'react-native';
+import { Dimensions, Animated, Modal, View, Text, TouchableOpacity, PanResponder, Image, TouchableWithoutFeedback, ActivityIndicator, Platform } from 'react-native';
 
 // Safe import for WebView and YoutubePlayer to prevent web issues
 let WebViewComponent: any = null;
@@ -32,6 +32,8 @@ import { Waveform } from '../components/Waveform';
 import { theme } from '../theme/colors';
 import tracksData from '../data/tracks.json';
 import { getOrDownloadImage } from '../hooks/useAudioDownloadManager';
+import { AuthModal } from '../components/AuthModal';
+import { PaywallModal } from '../components/PaywallModal';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -701,7 +703,10 @@ interface SoundPlayerProps {
 
 export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSheet, onOpenScenarios }) => {
   const dispatch = useAppDispatch();
-  const { isPlaying, activeSoundscape, activeScenarioId, volume, timerIsActive, timerTimeLeft, scenariosList, isYTAdPlaying, isLoading, isJustStartedPlaying, trackBoosts, globalBoost, eqAmbient, eqTempo, eqFocus } = useAppSelector((state) => state.audio);
+  const { isPlaying, activeSoundscape, activeScenarioId, volume, timerIsActive, timerTimeLeft, scenariosList, isYTAdPlaying, isLoading, isJustStartedPlaying, trackBoosts, globalBoost, eqAmbient, eqTempo, eqFocus, isPremiumUnlocked } = useAppSelector((state) => state.audio);
+
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
 
   const activeTrack = tracksData.find(t => t.id === (activeScenarioId || activeSoundscape));
   const isYouTubeTest = activeTrack?.source === 'youtube';
@@ -1334,9 +1339,27 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
                 <PlayerTitle>{getSoundscapeName(activeSoundscape)}</PlayerTitle>
                 <PlayerSubtitle>{getSubtitle(activeSoundscape)}</PlayerSubtitle>
               </TitleContainer>
-              <HeaderButton onPress={() => setShowTuner(true)}>
-                <Info size={20} color="#FFFFFF" style={{ opacity: 0.8 }} />
-              </HeaderButton>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => setShowPaywallModal(true)}
+                  style={{
+                    backgroundColor: isPremiumUnlocked ? 'rgba(255, 215, 0, 0.15)' : 'rgba(255, 126, 71, 0.15)',
+                    borderWidth: 0.8,
+                    borderColor: isPremiumUnlocked ? 'rgba(255, 215, 0, 0.4)' : 'rgba(255, 126, 71, 0.4)',
+                    borderRadius: 12,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    marginRight: 6,
+                  }}
+                >
+                  <Text style={{ color: isPremiumUnlocked ? '#FFD700' : '#FF7E47', fontSize: 11, fontWeight: '800' }}>
+                    {isPremiumUnlocked ? '👑 PRO' : '⚡ UPGRADE'}
+                  </Text>
+                </TouchableOpacity>
+                <HeaderButton onPress={() => setShowTuner(true)}>
+                  <Info size={20} color="#FFFFFF" style={{ opacity: 0.8 }} />
+                </HeaderButton>
+              </View>
             </HeaderBar>
           </Animated.View>
         </HeaderWrapper>
@@ -1582,6 +1605,19 @@ export const SoundPlayer: React.FC<SoundPlayerProps> = ({ onClose, onOpenTimerSh
           </TunerModalContainer>
         </TunerModalBackdrop>
       </Modal>
+
+      {/* Auth Modal & Paywall Subscription Modal */}
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {}}
+      />
+      <PaywallModal
+        visible={showPaywallModal}
+        onClose={() => setShowPaywallModal(false)}
+        customTitle="Unlock 1,500+ Soundtracks & Meditations"
+        customSubtitle="Get unlimited access to 1,500+ natural, relaxing, meditation and deep focus work soundtracks."
+      />
     </Container>
   );
 };

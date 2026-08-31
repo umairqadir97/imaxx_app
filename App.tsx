@@ -6,8 +6,8 @@ import { Home, Moon, Users, Sparkles, User, Compass, HelpCircle, Clock, Wind } f
 import Svg, { Circle, Path, Rect, G } from 'react-native-svg';
 import { store, useAppDispatch, useAppSelector } from './src/store';
 import { theme } from './src/theme/colors';
-import { tickTimer, addFocusSeconds, hydrateAudio, setActiveSubScreen } from './src/store/audioSlice';
-import { addListeningTime, hydrateHabits } from './src/store/habitSlice';
+import { tickTimer, addFocusSeconds, hydrateAudio, setActiveSubScreen, unlockPremium, lockPremium } from './src/store/audioSlice';
+import { addListeningTime, hydrateHabits, completeOnboarding } from './src/store/habitSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Screens
@@ -20,10 +20,13 @@ import { HabitTracker } from './src/screens/HabitTracker';
 import { FocusTimerTab } from './src/screens/FocusTimerTab';
 import { StatsDashboard } from './src/screens/StatsDashboard';
 import { Paywall } from './src/screens/Paywall';
+import { AuthLandingScreen } from './src/screens/AuthLandingScreen';
+import { supabase, supabaseService, UserProfile } from './src/services/supabaseClient';
 
 // Components
 import { MiniPlayer } from './src/components/MiniPlayer';
 import { TimerSheet } from './src/components/TimerSheet';
+import { AuthModal } from './src/components/AuthModal';
 
 // Custom Relax Yoga Icon matching Finch design
 const RelaxYogaIcon = ({ size = 26, color = '#08080A' }) => {
@@ -60,8 +63,74 @@ const MainAppContent: React.FC = () => {
 
   const dispatch = useAppDispatch();
 
-  // Hydration state
+  // Hydration & Auth state
   const [isHydrated, setIsHydrated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    // Helper to sync DB subscription status into Redux
+    const syncDbSubscription = async (userId: string) => {
+      try {
+        const dbProfile = await supabaseService.fetchUserProfile(userId);
+        const isPaid = dbProfile?.is_premium === true || (dbProfile?.payment_plan && dbProfile.payment_plan !== 'free');
+        if (isPaid) {
+          dispatch(unlockPremium());
+          await AsyncStorage.setItem('iMaxx_is_premium_unlocked', 'true');
+        } else {
+          dispatch(lockPremium());
+          await AsyncStorage.removeItem('iMaxx_is_premium_unlocked');
+        }
+        return dbProfile;
+      } catch (e) {
+        dispatch(lockPremium());
+        return null;
+      }
+    };
+
+    // Check stored user session
+    const loadUserSession = async () => {
+      const { user } = await supabaseService.getStoredSession();
+      if (user) {
+        const dbProfile = await syncDbSubscription(user.id);
+        setCurrentUser({
+          ...user,
+          ...(dbProfile || {}),
+        });
+      } else {
+        dispatch(lockPremium());
+        await AsyncStorage.removeItem('iMaxx_is_premium_unlocked');
+        setCurrentUser(null);
+      }
+    };
+    loadUserSession();
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session && session.user) {
+        const dbProfile = await syncDbSubscription(session.user.id);
+        const userProfile: UserProfile = {
+          id: session.user.id,
+          email: session.user.email || '',
+          full_name: dbProfile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          payment_plan: dbProfile?.payment_plan || 'free',
+          subscription_status: dbProfile?.subscription_status || 'free',
+          is_premium: dbProfile?.is_premium ?? false,
+          avatar_url: dbProfile?.avatar_url || session.user.user_metadata?.avatar_url,
+          created_at: session.user.created_at,
+        };
+        setCurrentUser(userProfile);
+        await supabaseService.saveSession(userProfile, session.access_token);
+      } else {
+        dispatch(lockPremium());
+        await AsyncStorage.removeItem('iMaxx_is_premium_unlocked');
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const habitsState = useAppSelector((state) => state.habits);
   const audioState = useAppSelector((state) => state.audio);
@@ -76,6 +145,7 @@ const MainAppContent: React.FC = () => {
   const [showPaywall, setShowPaywall] = useState(false);
   const [showScenarios, setShowScenarios] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   // Tab sequences for horizontal swiping
   const TABS: ('home' | 'sleep' | 'double' | 'habits')[] = ['home', 'sleep', 'double', 'habits'];
@@ -209,7 +279,35 @@ const MainAppContent: React.FC = () => {
     return (
       <SafeAreaContainer>
         <StatusBar barStyle="light-content" backgroundColor="#08080A" />
-        <Onboarding />
+        <Onboarding
+          onComplete={() => dispatch(completeOnboarding())}
+          onAuthSuccess={(user) => {
+            setCurrentUser(user);
+            dispatch(completeOnboarding());
+          }}
+        />
+      </SafeAreaContainer>
+    );
+  }
+
+  // Gate app behind Auth (Require Login / Signup before accessing main dashboard & pages)
+  if (!currentUser) {
+    return (
+      <SafeAreaContainer>
+        <StatusBar barStyle="light-content" backgroundColor="#08080A" />
+        <AuthLandingScreen
+          onAuthSuccess={(user) => {
+            setCurrentUser(user);
+            setShowPaywall(true); // Present paywall immediately after signup/login
+          }}
+          onOpenPaywall={() => setShowPaywall(true)}
+        />
+        {/* Paywall Overlay Modal */}
+        {showPaywall && (
+          <OverlayContainer style={{ zIndex: 9999 }}>
+            <Paywall onClose={() => setShowPaywall(false)} />
+          </OverlayContainer>
+        )}
       </SafeAreaContainer>
     );
   }
@@ -225,6 +323,7 @@ const MainAppContent: React.FC = () => {
             onOpenPaywall={() => setShowPaywall(true)}
             onNavigateToTab={(tab: any) => setActiveTab(tab)}
             onOpenSettings={() => setShowSettings(true)}
+            onOpenAuth={() => setShowAuth(true)}
           />
         );
       case 'sleep':
@@ -244,11 +343,11 @@ const MainAppContent: React.FC = () => {
           />
         );
       case 'double':
-        return <FocusTimerTab />;
+        return <FocusTimerTab onOpenPaywall={() => setShowPaywall(true)} />;
       case 'habits':
-        return <HabitTracker onOpenSettings={() => setShowSettings(true)} />;
+        return <HabitTracker onOpenSettings={() => setShowSettings(true)} onOpenPaywall={() => setShowPaywall(true)} />;
       case 'profile':
-        return <StatsDashboard onOpenPaywall={() => setShowPaywall(true)} />;
+        return <StatsDashboard onOpenPaywall={() => setShowPaywall(true)} onOpenAuth={() => setShowAuth(true)} />;
       default:
         return (
           <HomeDashboard
@@ -257,6 +356,7 @@ const MainAppContent: React.FC = () => {
             onOpenPaywall={() => setShowPaywall(true)}
             onNavigateToTab={(tab: any) => setActiveTab(tab)}
             onOpenSettings={() => setShowSettings(true)}
+            onOpenAuth={() => setShowAuth(true)}
           />
         );
     }
@@ -336,6 +436,9 @@ const MainAppContent: React.FC = () => {
           <Paywall onClose={() => setShowPaywall(false)} />
         </OverlayContainer>
       )}
+
+      {/* Auth Modal Overlay */}
+      <AuthModal visible={showAuth} onClose={() => setShowAuth(false)} onSuccess={() => {}} />
 
       {/* Timer Sheet Picker Bottom Overlay */}
       <TimerSheet visible={showTimer} onClose={() => setShowTimer(false)} />

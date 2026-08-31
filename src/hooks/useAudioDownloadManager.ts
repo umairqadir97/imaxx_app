@@ -89,6 +89,23 @@ const toggleHeaderCrypto = (base64Str: string): string => {
   }
 };
 
+export const CLOUDFRONT_BASE_URL = 'https://d25dywr0pyvqab.cloudfront.net';
+
+export const getCloudFrontUrlForTrack = (track: any): string => {
+  if (!track) return `${CLOUDFRONT_BASE_URL}/natural-sounds/jungle_soundtrack_0_to_10.mp3`;
+  if (track.url && track.url.includes('cloudfront.net')) {
+    return track.url;
+  }
+  if (track.s3Key) {
+    return `${CLOUDFRONT_BASE_URL}/${encodeURI(track.s3Key)}`;
+  }
+  if (track.url && track.url.includes('.amazonaws.com/')) {
+    const key = track.url.split('.amazonaws.com/')[1];
+    if (key) return `${CLOUDFRONT_BASE_URL}/${key}`;
+  }
+  return track.url || `${CLOUDFRONT_BASE_URL}/natural-sounds/jungle_soundtrack_0_to_10.mp3`;
+};
+
 export const useAudioDownloadManager = () => {
   const isDownloadingRef = useRef(false);
 
@@ -105,11 +122,7 @@ export const useAudioDownloadManager = () => {
         isDownloadingRef.current = true;
         console.log('[Onboarding] Starting background download of default-download tracks...');
 
-        // Fetch tracks listing from backend server
-        const response = await fetch(`${getBackendUrl()}/api/tracks`);
-        if (!response.ok) throw new Error('Failed to fetch track config');
-        
-        const tracks = await response.json();
+        const tracks = tracksData as any[];
         const defaultDownloads = tracks.filter((t: any) => t.category === 'default-download');
 
         // Ensure cache directories exist
@@ -127,10 +140,7 @@ export const useAudioDownloadManager = () => {
 
           console.log(`[Onboarding] Downloading ${track.id} in background...`);
           
-          // Get stream URL from backend API
-          const urlRes = await fetch(`${getBackendUrl()}/api/tracks/${track.id}/stream-url`);
-          const urlData = await urlRes.json();
-          const downloadUrl = urlData.streamUrl;
+          const downloadUrl = getCloudFrontUrlForTrack(track);
 
           // Temporary plain download path
           const tempUri = documentDir + `${track.id}_temp.mp3`;
@@ -282,71 +292,44 @@ const saveTrackToWebPhysicalStorage = async (trackId: string, blob: Blob): Promi
 // Playback Fetch-and-Stream Handler
 // -------------------------------------------------------------
 export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
-  // Playback counter increment
+  // Local AsyncStorage playback counter increment (100% offline & local)
   try {
     const countsRaw = await AsyncStorage.getItem('iMaxx_track_play_counts');
     const counts = countsRaw ? JSON.parse(countsRaw) : {};
     counts[trackId] = (counts[trackId] || 0) + 1;
     await AsyncStorage.setItem('iMaxx_track_play_counts', JSON.stringify(counts));
-
-    // Notify backend server of play count increment
-    fetch(`${getBackendUrl()}/api/tracks/${trackId}/play-increment`, { method: 'POST' }).catch(() => {});
   } catch (e) {
     // Ignore counter errors
   }
 
-  // Resolve static fallback URL from tracks.json
+  // Resolve active track from tracks.json and construct CloudFront URL
   const activeTrack = (tracksData as any[]).find(t => t.id === trackId || String((t as any).num) === trackId);
-  const fallbackUrl = activeTrack?.url || `https://cdn.dopamind.app/audio/tracks/${trackId}-v1.mp3`;
-
-  // Helper to fetch S3 Signed URL from backend server
-  const fetchSignedUrl = async (): Promise<string> => {
-    try {
-      const response = await fetch(`${getBackendUrl()}/api/tracks/${trackId}/signed-url`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.streamUrl) {
-          console.log(`[Backend SignedURL] ${data.cached ? 'Cached' : 'Fresh'} URL obtained for track #${data.trackNum || trackId}`);
-          return data.streamUrl;
-        }
-      }
-    } catch (e) {
-      console.log('[Backend SignedURL] Failed to reach server, fallback to default URL:', e);
-    }
-    return fallbackUrl;
-  };
+  const cloudFrontUrl = getCloudFrontUrlForTrack(activeTrack);
 
   if (Platform.OS === 'web') {
     try {
       // 1. Check physical device storage (OPFS / IndexedDB)
       const physicalUrl = await getTrackFromWebPhysicalStorage(trackId);
       if (physicalUrl) {
+        console.log(`[Web Physical Storage Hit] Playing track '${trackId}' from local storage cache.`);
         return physicalUrl;
       }
       
-      // 2. Cache Miss: Fetch signed S3 URL from backend to play instantly
-      console.log(`[Physical Storage Miss] Fetching signed URL for track '${trackId}'...`);
-      const signedStreamUrl = await fetchSignedUrl();
+      // 2. Cache Miss: Stream directly from high-speed CloudFront CDN URL immediately!
+      console.log(`[Web Physical Storage Miss] Streaming CloudFront URL for track '${trackId}': ${cloudFrontUrl}`);
       
-      // Concurrently download and save to physical device storage in the background
-      const proxyDownloadUrl = `${getBackendUrl()}/api/tracks/${trackId}/download`;
-      console.log(`[Web Background Cache] Downloading track '${trackId}' to physical storage from CORS-friendly proxy...`);
-      fetch(proxyDownloadUrl)
+      // Save CloudFront track blob to web OPFS/IndexedDB storage in background
+      fetch(cloudFrontUrl)
         .then(res => {
-          if (res.ok) {
-            return res.blob();
-          }
-          throw new Error('Proxy download failed');
+          if (res.ok) return res.blob();
+          throw new Error('CloudFront fetch notice');
         })
-        .then(blob => {
-          return saveTrackToWebPhysicalStorage(trackId, blob);
-        })
-        .catch(err => console.log('Web background physical download failed:', err));
+        .then(blob => saveTrackToWebPhysicalStorage(trackId, blob))
+        .catch(() => {});
         
-      return signedStreamUrl;
+      return cloudFrontUrl;
     } catch (e) {
-      console.log('Web physical storage exception, streaming directly:', e);
-      return await fetchSignedUrl();
+      return cloudFrontUrl;
     }
   }
 
@@ -397,21 +380,19 @@ export const getOrDownloadTrack = async (trackId: string): Promise<string> => {
  
       return decryptedTempUri;
     } else {
-      // 2. LOCAL STORAGE MISS: Fetch signed URL from backend, play immediately & download to local storage
-      console.log(`[Local Storage Miss] Fetching signed URL for ${trackId}...`);
-      const signedStreamUrl = await fetchSignedUrl();
- 
-      console.log(`[Local Storage Miss] Streaming ${trackId} immediately and downloading to local storage in background...`);
+      // 2. LOCAL STORAGE MISS: Stream from CloudFront immediately & download to local storage in background
+      console.log(`[Local Storage Miss] Streaming CloudFront URL for ${trackId}: ${cloudFrontUrl}`);
+      console.log(`[Local Storage Miss] Downloading ${trackId} to local encrypted storage in background...`);
       
       // Start background download & encryption so future plays load 100% offline from local storage
-      backgroundCacheTask(trackId, signedStreamUrl, encryptedFileUri);
+      backgroundCacheTask(trackId, cloudFrontUrl, encryptedFileUri);
       
-      // Return signed URL for instant playback
-      return signedStreamUrl;
+      // Return CloudFront URL for instant playback
+      return cloudFrontUrl;
     }
   } catch (err) {
-    console.log('Local storage read failure, falling back to network stream:', err);
-    return await fetchSignedUrl();
+    console.log('Local storage read failure, falling back to CloudFront stream:', err);
+    return cloudFrontUrl;
   }
 };
  

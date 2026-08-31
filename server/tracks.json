@@ -6,19 +6,21 @@
     "title": "BROWN NOISE",
     "slogan": "City Space",
     "category": "focus",
-    "source": "s3",
-    "url": "https://imaxx-audio-assets-prod-314694590067-us-east-1-an.s3.us-east-1.amazonaws.com/noise-tracks/Brown-Noise_city_space.mp3",
+    "source": "cloudfront",
+    "s3Key": "noise-tracks/Brown-Noise_city_space.mp3",
+    "url": "https://d25dywr0pyvqab.cloudfront.net/noise-tracks/Brown-Noise_city_space.mp3",
     "staticImage": "https://i.ytimg.com/vi/QfHK4sIFd9s/maxresdefault.jpg"
   },
   {
     "num": 2,
     "id": "relax",
     "name": "Relax",
-    "title": "DAWN AT SKÓGAFOSS",
-    "slogan": "Iceland Waterfall",
+    "title": "JUNGLE SOUNDTRACK",
+    "slogan": "Amazon Jungle Natural Sounds",
     "category": "relax",
-    "source": "cdn",
-    "url": "",
+    "source": "cloudfront",
+    "s3Key": "natural-sounds/jungle_soundtrack_0_to_10.mp3",
+    "url": "https://d25dywr0pyvqab.cloudfront.net/natural-sounds/jungle_soundtrack_0_to_10.mp3",
     "staticImage": "https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?q=80&w=800"
   },
   {

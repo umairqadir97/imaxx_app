@@ -170,6 +170,8 @@ interface HomeDashboardProps {
   onOpenPaywall: () => void;
   onNavigateToTab: (tabName: string) => void;
   onOpenSettings: () => void;
+  onOpenAuth?: () => void;
+  isGuest?: boolean;
 }
 
 export const HomeDashboard: React.FC<HomeDashboardProps> = ({
@@ -178,12 +180,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   onOpenPaywall,
   onNavigateToTab,
   onOpenSettings,
+  onOpenAuth,
+  isGuest = false,
 }) => {
   const dispatch = useAppDispatch();
 
   // Redux store states
   const habits = useAppSelector((state) => state.habits.habits);
-  const { isPlaying, timerIsActive, timerTimeLeft, timerDuration, activeSoundscape, completedPomodorosCount, totalFocusSeconds, weeklyFocusMinutes } = useAppSelector((state) => state.audio);
+  const { isPlaying, timerIsActive, timerTimeLeft, timerDuration, activeSoundscape, completedPomodorosCount, totalFocusSeconds, weeklyFocusMinutes, isPremiumUnlocked } = useAppSelector((state) => state.audio);
 
   const [selectedDuration, setSelectedDuration] = useState(1500); // Default 25 min
   const [activeCompanion, setActiveCompanion] = useState<CompanionType>('red_panda');
@@ -219,6 +223,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   };
 
   const handleToggleHabitCompletion = (habitId: string) => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     const habit = habits.find(h => h.id === habitId);
     if (habit) {
       const wasCompleted = habit.completions.includes(todayStr);
@@ -230,6 +238,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   };
 
   const navigateToMicroHabits = async () => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     dispatch(setHabitsSubTab('micro'));
     try {
       await AsyncStorage.setItem('habits_sub_tab', 'micro');
@@ -251,6 +263,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   }, []);
 
   const handleActiveCompanionChange = async (newCompanion: CompanionType) => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     setActiveCompanion(newCompanion);
     try {
       await AsyncStorage.setItem('iMaxx_active_companion', newCompanion);
@@ -288,6 +304,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   };
 
   const handleStartTimer = () => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     if (timerIsActive) {
       dispatch(togglePlayback());
     } else {
@@ -344,8 +364,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
         <HeaderActions>
           <PaywallBadge onPress={onOpenPaywall}>
-            <Star size={10} color="#FF7E47" fill="#FF7E47" style={{ marginRight: 4 }} />
-            <BadgeText>PRO</BadgeText>
+            <Star size={10} color="#FF7E47" fill={isPremiumUnlocked ? '#FF7E47' : 'transparent'} style={{ marginRight: 4 }} />
+            <BadgeText>{isPremiumUnlocked ? 'PRO' : 'UPGRADE'}</BadgeText>
           </PaywallBadge>
           <ActionButton onPress={() => onNavigateToTab('profile')}>
             <User size={18} color="#FFFFFF" />
@@ -353,7 +373,37 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </HeaderActions>
       </HeaderBar>
 
-      <ScrollContent showsVerticalScrollIndicator={false}>
+      {/* Free Plan Lock Banner */}
+      {!isPremiumUnlocked && (
+        <TouchableOpacity
+          style={{
+            backgroundColor: 'rgba(255, 126, 71, 0.12)',
+            borderWidth: 1,
+            borderColor: 'rgba(255, 126, 71, 0.35)',
+            borderRadius: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            marginHorizontal: 20,
+            marginTop: 10,
+            marginBottom: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+          onPress={onOpenPaywall}
+          activeOpacity={0.85}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Lock size={16} color="#FF7E47" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#FFFFFF', fontSize: 13 }}>
+              🔒 Free Plan — <Text style={{ color: '#FF7E47', fontWeight: 'bold' }}>Upgrade to iMaxx Premium</Text> to unlock all features
+            </Text>
+          </View>
+          <ChevronRight size={16} color="#FF7E47" />
+        </TouchableOpacity>
+      )}
+
+      <ScrollContent showsVerticalScrollIndicator={false} style={{ opacity: !isPremiumUnlocked ? 0.45 : 1 }}>
 
         {/* Gamified Focus Companion Stage */}
         <CompanionStage
@@ -366,8 +416,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           onChangeCompanion={handleActiveCompanionChange}
           totalTasksCount={totalHabits}
           completedTasksCount={completedHabitsCount}
-          onPressTaskPreview={() => setShowQuickCheckoff(true)}
-          onPressUserJourney={() => setShowUserJourneyModal(true)}
+          onPressTaskPreview={() => isPremiumUnlocked ? setShowQuickCheckoff(true) : onOpenPaywall()}
+          onPressUserJourney={() => isPremiumUnlocked ? setShowUserJourneyModal(true) : onOpenPaywall()}
         />
 
         {/* Consistency Counter (moved directly below Companion Stage & above ADHD Focus Dial) */}

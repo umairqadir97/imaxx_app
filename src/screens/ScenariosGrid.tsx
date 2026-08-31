@@ -770,12 +770,20 @@ export const ScenariosGrid: React.FC<ScenariosGridProps> = ({
   const colors = ['#9B7EDE', '#4ECDC4', '#FF7E47', '#00BCD4', '#E91E63', '#FFD700'];
 
   const handleSelectSound = (sound: any) => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     // Dispatch setScenario to select and play the specific scenario track
     dispatch(setScenario(sound.id));
     onSelectScenario();
   };
 
   const handleSelectGoal = (goal: any) => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     dispatch(setSoundscape(goal.category));
     onSelectScenario();
   };
@@ -891,6 +899,11 @@ export const ScenariosGrid: React.FC<ScenariosGridProps> = ({
                 <GoalCard key={goal.id} onPress={() => handleSelectGoal(goal)}>
                   <GoalImageContainer>
                     <GoalImage source={{ uri: goal.bgUrl }} resizeMode="cover" />
+                    {!isPremiumUnlocked && (
+                      <LockBadge>
+                        <Lock size={9} color="#FF7E47" fill="#FF7E47" />
+                      </LockBadge>
+                    )}
                   </GoalImageContainer>
                   <GoalTitle>{goal.title}</GoalTitle>
                 </GoalCard>
@@ -908,9 +921,17 @@ export const ScenariosGrid: React.FC<ScenariosGridProps> = ({
                   <LargeTileCard key={item.id} onPress={() => handleSelectSound(item)}>
                     <LargeTileImage source={{ uri: item.bgUrl }} resizeMode="cover" />
                     <LargeTileOverlay>
-                      <LargeTileCategory color={item.category === 'nature' ? '#4ECDC4' : '#9B7EDE'}>
-                        {item.category.toUpperCase()}
-                      </LargeTileCategory>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <LargeTileCategory color={item.category === 'nature' ? '#4ECDC4' : '#9B7EDE'}>
+                          {item.category.toUpperCase()}
+                        </LargeTileCategory>
+                        {!isPremiumUnlocked && (
+                          <View style={{ backgroundColor: 'rgba(15, 15, 20, 0.85)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderColor: 'rgba(255,126,71,0.4)' }}>
+                            <Lock size={10} color="#FF7E47" fill="#FF7E47" style={{ marginRight: 4 }} />
+                            <Text style={{ color: '#FF7E47', fontSize: 10, fontWeight: '800' }}>PRO</Text>
+                          </View>
+                        )}
+                      </View>
                       <LargeTileTitle>{item.name}</LargeTileTitle>
                       <LargeTileSub>{item.sub}</LargeTileSub>
                     </LargeTileOverlay>
@@ -925,7 +946,7 @@ export const ScenariosGrid: React.FC<ScenariosGridProps> = ({
             </SectionHeaderRow>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 4, marginBottom: 28 }}>
               {['3 min', '5 min', '10 min', '15 min', '20 min', '30 min'].map((time) => (
-                <TimePill key={time} onPress={() => {}}>
+                <TimePill key={time} onPress={() => !isPremiumUnlocked ? onOpenPaywall() : {}}>
                   <TimePillText>{time}</TimePillText>
                 </TimePill>
               ))}
@@ -941,9 +962,9 @@ export const ScenariosGrid: React.FC<ScenariosGridProps> = ({
                   <CardHeaderImage source={{ uri: sound.bgUrl }} imageStyle={{ borderTopLeftRadius: 19, borderTopRightRadius: 19 }}>
                     <CardHeaderOverlay>
                       <Music size={18} color="#FFFFFF" style={{ opacity: 0.9 }} />
-                      {false && sound.isPremium && !isPremiumUnlocked && (
+                      {!isPremiumUnlocked && (
                         <LockBadge>
-                          <Lock size={9} color="#FFFFFF" fill="#FFFFFF" />
+                          <Lock size={9} color="#FF7E47" fill="#FF7E47" />
                         </LockBadge>
                       )}
                     </CardHeaderOverlay>
@@ -990,9 +1011,9 @@ export const ScenariosGrid: React.FC<ScenariosGridProps> = ({
                   <CardHeaderImage source={{ uri: sound.bgUrl }} imageStyle={{ borderTopLeftRadius: 19, borderTopRightRadius: 19 }}>
                     <CardHeaderOverlay>
                       <Music size={18} color="#FFFFFF" style={{ opacity: 0.9 }} />
-                      {false && sound.isPremium && !isPremiumUnlocked && (
+                      {!isPremiumUnlocked && (
                         <LockBadge>
-                          <Lock size={9} color="#FFFFFF" fill="#FFFFFF" />
+                          <Lock size={9} color="#FF7E47" fill="#FF7E47" />
                         </LockBadge>
                       )}
                     </CardHeaderOverlay>

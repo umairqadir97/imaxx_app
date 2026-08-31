@@ -81,7 +81,17 @@ function writeCacheToFile(cache) {
 async function getOrGenerateSignedUrl(track) {
   const cacheKey = track.url || track.id;
   const now = Date.now();
-  
+
+  if (track.source === 'cloudfront' || (track.url && track.url.includes('cloudfront.net'))) {
+    const cfUrl = track.url || `https://d25dywr0pyvqab.cloudfront.net/${track.s3Key || 'natural-sounds/jungle_soundtrack_0_to_10.mp3'}`;
+    return {
+      streamUrl: cfUrl,
+      cached: true,
+      generatedAt: now,
+      ageHours: 0,
+    };
+  }
+
   const cache = loadCacheFromFile();
   const cached = cache[cacheKey];
 
@@ -339,10 +349,100 @@ app.post('/api/tracks/:id/play-increment', (req, res) => {
 });
 
 /**
+ * RevenueCat Webhook Handler & Supabase Sync
+ */
+const { createClient } = require('@supabase/supabase-js');
+const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY ? createClient(
+  process.env.SUPABASE_URL || 'https://wceaigqblpfknnuoisqa.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+) : null;
+
+app.post('/api/webhooks/revenuecat', async (req, res) => {
+  try {
+    const event = req.body.event;
+    console.log('[RevenueCat Webhook Received]:', event?.type);
+
+    if (event && supabaseAdmin) {
+      const appUserId = event.app_user_id;
+      const periodType = event.period_type; // 'TRIAL' or 'NORMAL'
+      const productId = event.product_id || '';
+      const type = event.type; // 'INITIAL_PURCHASE', 'RENEWAL', etc.
+
+      let status = 'free';
+      let planType = 'free';
+      if (['INITIAL_PURCHASE', 'RENEWAL', 'NON_RENEWING_PURCHASE', 'PRODUCT_CHANGE'].includes(type)) {
+        status = periodType === 'TRIAL' ? 'trialing' : 'active';
+        planType = productId.includes('yearly') ? 'annual_ultra' : 'monthly_pass';
+      }
+
+      await supabaseAdmin.from('subscriptions').upsert({
+        user_id: appUserId,
+        status: status,
+        plan_type: planType,
+        store: 'test_revenuecat',
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error('[RevenueCat Webhook Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * Health check
  */
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', cachedUrlsCount: signedUrlCache.size, timestamp: new Date().toISOString() });
+});
+
+// Initialize Supabase Admin Client using Service Role Key (reusing supabaseAdmin)
+
+/**
+ * Admin API: Fetch user profile & plan from public.profiles table using Service Role Key
+ */
+app.get('/api/admin/user-plan/:userId', async (req, res) => {
+  try {
+    if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase admin client not initialized' });
+    const { userId } = req.params;
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ success: true, profile: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Admin API: Update user plan in public.profiles table using Service Role Key
+ */
+app.post('/api/admin/update-user-plan', async (req, res) => {
+  try {
+    if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase admin client not initialized' });
+    const { userId, paymentPlan, subscriptionStatus, isPremium } = req.body;
+
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        payment_plan: paymentPlan,
+        subscription_status: subscriptionStatus || (isPremium ? 'active' : 'free'),
+        is_premium: isPremium ?? (paymentPlan !== 'free'),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ success: true, message: `Updated plan for user ${userId}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Start server only when not running on Vercel serverless environment
@@ -350,6 +450,7 @@ if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`\n🎧 iMaxx Audio Backend Server running at http://localhost:${PORT}`);
     console.log(`🔒 S3 Bucket: ${BUCKET_NAME}`);
+    console.log(`🔑 Supabase Admin Client initialized with Service Role Key`);
     console.log(`⏱️ Signed URL Cache Max Age: ${CACHE_MAX_AGE_MS / (1000 * 60 * 60)} hours (URL validity: 24 hours)\n`);
   });
 }

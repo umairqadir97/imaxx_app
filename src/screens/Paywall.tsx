@@ -1,10 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { PanResponder } from 'react-native';
-import styled from 'styled-components/native';
-import { Sparkles, Check, X, Shield, Award, Calendar } from 'lucide-react-native';
-import { useAppDispatch } from '../store';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, PanResponder } from 'react-native';
+import { X, CheckCircle2, Star, Crown, Flame, Sparkles } from 'lucide-react-native';
+import { useAppDispatch, useAppSelector } from '../store';
 import { unlockPremium } from '../store/audioSlice';
-import { GlassCard } from '../components/GlassCard';
+import { usePurchases } from '../hooks/usePurchases';
 
 interface PaywallProps {
   onClose: () => void;
@@ -12,18 +11,14 @@ interface PaywallProps {
 
 export const Paywall: React.FC<PaywallProps> = ({ onClose }) => {
   const dispatch = useAppDispatch();
-  const [selectedPlan, setSelectedPlan] = useState<'plus' | 'pro' | 'lifetime'>('plus');
-
-  const handleSubscribe = () => {
-    dispatch(unlockPremium());
-    onClose();
-  };
+  const { purchasePackage, restorePurchases, isLoading } = usePurchases();
+  const [selectedPlan, setSelectedPlan] = useState<'imaxx_monthly_699' | 'imaxx_annual_1900'>('imaxx_monthly_699');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const { dy, dx } = gestureState;
-        // Respond to downward swipes
         return dy > 45 && Math.abs(dx) < 30;
       },
       onPanResponderRelease: (evt, gestureState) => {
@@ -35,395 +30,423 @@ export const Paywall: React.FC<PaywallProps> = ({ onClose }) => {
     })
   ).current;
 
+  const handlePurchase = async () => {
+    const success = await purchasePackage(selectedPlan);
+    if (success) {
+      dispatch(unlockPremium());
+      setToastMsg('🎉 Premium Unlocked Successfully!');
+      setTimeout(() => {
+        setToastMsg(null);
+        onClose();
+      }, 1400);
+    }
+  };
+
+  const handleRestore = async () => {
+    const success = await restorePurchases();
+    if (success) {
+      dispatch(unlockPremium());
+      setToastMsg('✓ Purchases Restored Successfully');
+      setTimeout(() => {
+        setToastMsg(null);
+        onClose();
+      }, 1400);
+    } else {
+      setToastMsg('No active purchases found');
+      setTimeout(() => setToastMsg(null), 2000);
+    }
+  };
+
   return (
-    <Container>
-      <HeaderWrapper {...panResponder.panHandlers}>
-        <GestureIndicatorContainer>
-          <GestureIndicatorBar />
-        </GestureIndicatorContainer>
-        {/* Top Close bar */}
-        <HeaderBar>
-          <Spacer />
-          <CloseButton onPress={onClose}>
-            <X size={20} color="#FFFFFF" />
-          </CloseButton>
-        </HeaderBar>
-      </HeaderWrapper>
+    <View style={styles.overlay}>
+      <View style={styles.sheetContainer}>
+        {/* Top Swipe Drag Handle Bar */}
+        <View style={styles.dragHeader} {...panResponder.panHandlers}>
+          <View style={styles.dragBar} />
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+            <X size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
 
-      <ScrollContent showsVerticalScrollIndicator={false}>
-        {/* Crown Illustration */}
-        <HeroSection>
-          <GlowCircle>
-            <CrownIcon>👑</CrownIcon>
-            <SproutText>🌱</SproutText>
-          </GlowCircle>
-          <Headline>Unlock Your Full Brain</Headline>
-          <Subheadline>Build unbreakable ADHD focus routines & access adaptive AI soundscapes.</Subheadline>
-        </HeroSection>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Hero Gem Icon */}
+          <View style={styles.heroSection}>
+            <View style={styles.gemContainer}>
+              <Text style={styles.gemIcon}>💎</Text>
+            </View>
+            <Text style={styles.mainTitle}>Pick your plan</Text>
 
-        {/* Feature Grid Comparison Table */}
-        <FeatureTableContainer>
-          <FeatureRow style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)', paddingBottom: 8 }}>
-            <FeatureHeader>FEATURES</FeatureHeader>
-            <TierHeader>FREE</TierHeader>
-            <TierHeader active={true}>PLUS</TierHeader>
-            <TierHeader>PRO</TierHeader>
-          </FeatureRow>
+            {/* Feature Bullet List */}
+            <View style={styles.featureList}>
+              <View style={styles.featureItem}>
+                <View style={styles.bulletDot}>
+                  <CheckCircle2 size={15} color="#9B7EDE" />
+                </View>
+                <Text style={styles.featureText}>Unlock 1,500+ Natural, Relaxing & Deep Focus Soundtracks</Text>
+              </View>
 
-          <FeatureRow>
-            <FeatureName>15+ Soundscapes</FeatureName>
-            <FeatureVal><X size={14} color="#6B6280" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-          </FeatureRow>
+              <View style={styles.featureItem}>
+                <View style={styles.bulletDot}>
+                  <CheckCircle2 size={15} color="#9B7EDE" />
+                </View>
+                <Text style={styles.featureText}>Smart 90-Min Circadian Sleep Cycle Alarms</Text>
+              </View>
 
-          <FeatureRow>
-            <FeatureName>ADHD Focus Presets</FeatureName>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-          </FeatureRow>
+              <View style={styles.featureItem}>
+                <View style={styles.bulletDot}>
+                  <CheckCircle2 size={15} color="#9B7EDE" />
+                </View>
+                <Text style={styles.featureText}>Custom Local MP3 Ringtones Importer</Text>
+              </View>
 
-          <FeatureRow>
-            <FeatureName>Co-working / Body Double</FeatureName>
-            <FeatureVal><X size={14} color="#6B6280" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-          </FeatureRow>
+              <View style={styles.featureItem}>
+                <View style={styles.bulletDot}>
+                  <CheckCircle2 size={15} color="#9B7EDE" />
+                </View>
+                <Text style={styles.featureText}>Calibrated 60s Physical Shake Wakeup Challenge</Text>
+              </View>
 
-          <FeatureRow>
-            <FeatureName>Biometric Temp Tuning</FeatureName>
-            <FeatureVal><X size={14} color="#6B6280" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-          </FeatureRow>
+              <View style={styles.featureItem}>
+                <View style={styles.bulletDot}>
+                  <CheckCircle2 size={15} color="#9B7EDE" />
+                </View>
+                <Text style={styles.featureText}>Full Focus & Sleep Regularity Analytics</Text>
+              </View>
+            </View>
 
-          <FeatureRow>
-            <FeatureName>ADHD Routine Coaching</FeatureName>
-            <FeatureVal><X size={14} color="#6B6280" /></FeatureVal>
-            <FeatureVal><X size={14} color="#6B6280" /></FeatureVal>
-            <FeatureVal><Check size={14} color="#4ECDC4" /></FeatureVal>
-          </FeatureRow>
-        </FeatureTableContainer>
+            {/* Rating Stars Social Proof */}
+            <View style={styles.ratingRow}>
+              <Text style={styles.ratingScore}>4.9 stars</Text>
+              <View style={{ flexDirection: 'row', marginHorizontal: 4 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Star key={i} size={13} color="#FFD700" fill="#FFD700" style={{ marginRight: 2 }} />
+                ))}
+              </View>
+              <Text style={styles.ratingReviews}>1,000+ reviews</Text>
+            </View>
+          </View>
 
-        {/* Plan Selectors */}
-        <SectionTitle>Select Plan</SectionTitle>
+          {/* Pricing Options Cards */}
+          <View style={styles.plansContainer}>
+            {/* Plan 1: Annual Ultra Plan ($19.50/yr) */}
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                selectedPlan === 'imaxx_annual_1900' && styles.planCardSelected,
+              ]}
+              activeOpacity={0.88}
+              onPress={() => setSelectedPlan('imaxx_annual_1900')}
+            >
+              <View style={styles.radioRow}>
+                <View style={[styles.radioButton, selectedPlan === 'imaxx_annual_1900' && styles.radioButtonSelected]}>
+                  {selectedPlan === 'imaxx_annual_1900' && <View style={styles.radioInnerDot} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.planName}>Annual Ultra Plan</Text>
+                  <Text style={styles.planSubtext}>Only $1.58/mo billed annually</Text>
+                </View>
+                <View style={styles.planRightColumn}>
+                  <View style={styles.discountBadge}>
+                    <Text style={styles.discountBadgeText}>77% OFF</Text>
+                  </View>
+                  <Text style={styles.priceMain}>$19.50/yr</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
 
-        <PlanCard active={selectedPlan === 'plus'} onPress={() => setSelectedPlan('plus')}>
-          <PlanHeaderRow>
-            <PlanInfo>
-              <PlanTitle>iMaxx Plus</PlanTitle>
-              <PlanSubtitle>All Soundscapes & Co-Working Rooms</PlanSubtitle>
-            </PlanInfo>
-            <RadioCircle active={selectedPlan === 'plus'} />
-          </PlanHeaderRow>
-          <PlanPriceRow>
-            <PriceText>$6.99 / week</PriceText>
-            <SaveBadge><SaveText>SAVE 35% ANNUALLY</SaveText></SaveBadge>
-          </PlanPriceRow>
-          <PlanSubDetails>Or billing annually at $39.99/year</PlanSubDetails>
-        </PlanCard>
+            {/* Plan 2: 7-Day Pass / Monthly ($1.00 trial, then $6.99/mo) */}
+            <TouchableOpacity
+              style={[
+                styles.planCard,
+                selectedPlan === 'imaxx_monthly_699' && styles.planCardSelected,
+              ]}
+              activeOpacity={0.88}
+              onPress={() => setSelectedPlan('imaxx_monthly_699')}
+            >
+              <View style={styles.radioRow}>
+                <View style={[styles.radioButton, selectedPlan === 'imaxx_monthly_699' && styles.radioButtonSelected]}>
+                  {selectedPlan === 'imaxx_monthly_699' && <View style={styles.radioInnerDot} />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.planName}>7-Day Premium Pass</Text>
+                  <Text style={styles.planSubtext}>$1.00 for 7 days, then $6.99/mo</Text>
+                </View>
+                <View style={styles.planRightColumn}>
+                  <View style={styles.trialBadge}>
+                    <Text style={styles.trialBadgeText}>$1.00 TRIAL</Text>
+                  </View>
+                  <Text style={styles.priceMain}>$6.99/mo</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </View>
 
-        <PlanCard active={selectedPlan === 'pro'} onPress={() => setSelectedPlan('pro')}>
-          <PlanHeaderRow>
-            <PlanInfo>
-              <PlanTitle>iMaxx Pro</PlanTitle>
-              <PlanSubtitle>Everything in Plus + ADHD Coaching</PlanSubtitle>
-            </PlanInfo>
-            <RadioCircle active={selectedPlan === 'pro'} />
-          </PlanHeaderRow>
-          <PlanPriceRow>
-            <PriceText>$9.99 / month</PriceText>
-          </PlanPriceRow>
-          <PlanSubDetails>Or billing annually at $69.99/year</PlanSubDetails>
-        </PlanCard>
+          {/* Feedback Toast */}
+          {toastMsg && (
+            <View style={styles.toastBox}>
+              <Text style={styles.toastText}>{toastMsg}</Text>
+            </View>
+          )}
 
-        <PlanCard active={selectedPlan === 'lifetime'} onPress={() => setSelectedPlan('lifetime')}>
-          <PlanHeaderRow>
-            <PlanInfo>
-              <PlanTitle>Lifetime Access</PlanTitle>
-              <PlanSubtitle>Pay once. Lock in premium forever</PlanSubtitle>
-            </PlanInfo>
-            <RadioCircle active={selectedPlan === 'lifetime'} />
-          </PlanHeaderRow>
-          <PlanPriceRow>
-            <PriceText>$99.99</PriceText>
-            <SaveBadge style={{ backgroundColor: '#FF6B6B' }}>
-              <SaveText style={{ color: '#FFFFFF' }}>LIMITED OFFER</SaveText>
-            </SaveBadge>
-          </PlanPriceRow>
-          <PlanSubDetails>One-time charge. No recurring fees.</PlanSubDetails>
-        </PlanCard>
+          {/* Main CTA Continue Button */}
+          <TouchableOpacity
+            style={styles.continueBtn}
+            activeOpacity={0.85}
+            onPress={handlePurchase}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#08080C" />
+            ) : (
+              <Text style={styles.continueBtnText}>
+                {selectedPlan === 'imaxx_monthly_699'
+                  ? 'Start $1.00 7-Day Pass ⚡'
+                  : 'Get Annual Ultra Plan ($19.50/yr) 👑'}
+              </Text>
+            )}
+          </TouchableOpacity>
 
-        {/* Subscribe Button */}
-        <ActionWrapper>
-          <SubscribeButton onPress={handleSubscribe}>
-            <Sparkles size={18} color="#0D0B1A" style={{ marginRight: 8 }} />
-            <SubscribeText>Start 7-Day Free Trial</SubscribeText>
-          </SubscribeButton>
-          <GuaranteeRow>
-            <Shield size={12} color="#6B6280" style={{ marginRight: 6 }} />
-            <GuaranteeText>30-day money-back guarantee. Cancel anytime. No guilt.</GuaranteeText>
-          </GuaranteeRow>
-        </ActionWrapper>
-
-        <ExtraSpacing />
-      </ScrollContent>
-    </Container>
+          {/* Footer Links */}
+          <View style={styles.footerRow}>
+            <TouchableOpacity onPress={handleRestore}>
+              <Text style={styles.footerLink}>Restore Purchases</Text>
+            </TouchableOpacity>
+            <Text style={styles.footerDot}>•</Text>
+            <Text style={styles.footerLink}>Terms</Text>
+            <Text style={styles.footerDot}>•</Text>
+            <Text style={styles.footerLink}>Privacy</Text>
+          </View>
+        </ScrollView>
+      </View>
+    </View>
   );
 };
 
-const Container = styled.View`
-  flex: 1;
-  background-color: #0D0B1A;
-`;
-
-const HeaderBar = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  padding: 50px 20px 10px 20px;
-  height: 100px;
-`;
-
-const Spacer = styled.View``;
-
-const CloseButton = styled.TouchableOpacity`
-  width: 36px;
-  height: 36px;
-  border-radius: 18px;
-  background-color: #1A1528;
-  justify-content: center;
-  align-items: center;
-  border-width: 1px;
-  border-color: rgba(255, 255, 255, 0.05);
-`;
-
-const ScrollContent = styled.ScrollView`
-  flex: 1;
-  padding: 0 20px;
-`;
-
-const HeroSection = styled.View`
-  align-items: center;
-  margin-bottom: 24px;
-`;
-
-const GlowCircle = styled.View`
-  width: 90px;
-  height: 90px;
-  border-radius: 45px;
-  background-color: rgba(155, 126, 222, 0.12);
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 16px;
-  border-width: 1.5px;
-  border-color: rgba(155, 126, 222, 0.25);
-  shadow-color: #9B7EDE;
-  shadow-opacity: 0.5;
-  shadow-radius: 12px;
-  position: relative;
-`;
-
-const CrownIcon = styled.Text`
-  font-size: 24px;
-  position: absolute;
-  top: -15px;
-  transform: rotate(-10deg);
-`;
-
-const SproutText = styled.Text`
-  font-size: 38px;
-`;
-
-const Headline = styled.Text`
-  color: #FFFFFF;
-  font-size: 24px;
-  font-weight: 800;
-  margin-bottom: 8px;
-  text-align: center;
-`;
-
-const Subheadline = styled.Text`
-  color: #B8B0D0;
-  font-size: 13px;
-  text-align: center;
-  line-height: 18px;
-  padding: 0 10px;
-`;
-
-const SectionTitle = styled.Text`
-  color: #FFFFFF;
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 12px;
-  margin-top: 14px;
-`;
-
-const FeatureTableContainer = styled(GlassCard)`
-  padding: 16px 12px;
-  margin-bottom: 20px;
-`;
-
-const FeatureRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  padding: 8px 0;
-`;
-
-const FeatureHeader = styled.Text`
-  color: #6B6280;
-  font-size: 10px;
-  font-weight: 800;
-  flex: 1.5;
-`;
-
-const TierHeader = styled.Text<{ active?: boolean }>`
-  color: ${props => props.active ? '#9B7EDE' : '#6B6280'};
-  font-size: 10px;
-  font-weight: 800;
-  width: 50px;
-  text-align: center;
-`;
-
-const FeatureName = styled.Text`
-  color: #B8B0D0;
-  font-size: 12px;
-  font-weight: bold;
-  flex: 1.5;
-`;
-
-const FeatureVal = styled.View`
-  width: 50px;
-  align-items: center;
-`;
-
-const PlanCard = styled(GlassCard) <{ active: boolean }>`
-  margin-bottom: 12px;
-  padding: 16px;
-  border-color: ${props => props.active ? '#9B7EDE' : 'rgba(255,255,255,0.06)'};
-  background-color: ${props => props.active ? 'rgba(155,126,222,0.08)' : 'rgba(26,21,40,0.65)'};
-`;
-
-const PlanHeaderRow = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-`;
-
-const PlanInfo = styled.View``;
-
-const PlanTitle = styled.Text`
-  color: #FFFFFF;
-  font-size: 16px;
-  font-weight: bold;
-`;
-
-const PlanSubtitle = styled.Text`
-  color: #6B6280;
-  font-size: 11px;
-  margin-top: 2px;
-`;
-
-const RadioCircle = styled.View<{ active: boolean }>`
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  border-width: 2px;
-  border-color: ${props => props.active ? '#9B7EDE' : '#6B6280'};
-  background-color: ${props => props.active ? '#9B7EDE' : 'transparent'};
-`;
-
-const PlanPriceRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 4px;
-`;
-
-const PriceText = styled.Text`
-  color: #FFFFFF;
-  font-size: 18px;
-  font-weight: bold;
-  margin-right: 10px;
-`;
-
-const SaveBadge = styled.View`
-  background-color: rgba(78, 205, 196, 0.15);
-  border-radius: 4px;
-  padding: 2px 6px;
-  border-width: 1px;
-  border-color: rgba(78, 205, 196, 0.3);
-`;
-
-const SaveText = styled.Text`
-  color: #4ECDC4;
-  font-size: 9px;
-  font-weight: 800;
-`;
-
-const PlanSubDetails = styled.Text`
-  color: #6B6280;
-  font-size: 10px;
-`;
-
-const ActionWrapper = styled.View`
-  margin-top: 14px;
-  align-items: center;
-  width: 100%;
-`;
-
-const SubscribeButton = styled.TouchableOpacity`
-  background-color: #9B7EDE;
-  padding: 16px;
-  border-radius: 30px;
-  align-items: center;
-  width: 100%;
-  flex-direction: row;
-  justify-content: center;
-  shadow-color: #9B7EDE;
-  shadow-opacity: 0.3;
-  shadow-radius: 8px;
-`;
-
-const SubscribeText = styled.Text`
-  color: #0D0B1A;
-  font-size: 16px;
-  font-weight: bold;
-`;
-
-const GuaranteeRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  margin-top: 12px;
-`;
-
-const GuaranteeText = styled.Text`
-  color: #6B6280;
-  font-size: 10px;
-`;
-
-const ExtraSpacing = styled.View`
-  height: 100px;
-`;
-
-const GestureIndicatorContainer = styled.View`
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  padding-top: 10px;
-  padding-bottom: 5px;
-  background-color: transparent;
-`;
-
-const GestureIndicatorBar = styled.View`
-  width: 40px;
-  height: 5px;
-  border-radius: 2.5px;
-  background-color: rgba(255, 255, 255, 0.2);
-`;
-
-const HeaderWrapper = styled.View`
-  background-color: transparent;
-  width: 100%;
-`;
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 5, 12, 0.85)',
+    justifyContent: 'flex-end',
+  },
+  sheetContainer: {
+    backgroundColor: '#0F0E17',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    paddingHorizontal: 22,
+    paddingTop: 14,
+    paddingBottom: 34,
+    maxHeight: '94%',
+  },
+  dragHeader: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 6,
+  },
+  dragBar: {
+    width: 42,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  closeBtn: {
+    position: 'absolute',
+    right: 0,
+    top: 6,
+    padding: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 12,
+  },
+  scrollContent: {
+    paddingBottom: 24,
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  gemContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(155, 126, 222, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(155, 126, 222, 0.3)',
+  },
+  gemIcon: {
+    fontSize: 32,
+  },
+  mainTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  featureList: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  bulletDot: {
+    marginRight: 10,
+  },
+  featureText: {
+    color: '#E2E0EE',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ratingScore: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  ratingReviews: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+  },
+  plansContainer: {
+    marginBottom: 18,
+  },
+  planCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    marginBottom: 12,
+  },
+  planCardSelected: {
+    borderColor: '#00F2FE',
+    backgroundColor: 'rgba(0, 242, 254, 0.08)',
+  },
+  radioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioButtonSelected: {
+    borderColor: '#00F2FE',
+  },
+  radioInnerDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#00F2FE',
+  },
+  planName: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  planSubtext: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  planRightColumn: {
+    alignItems: 'flex-end',
+  },
+  discountBadge: {
+    backgroundColor: '#FF2A85',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  discountBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  trialBadge: {
+    backgroundColor: 'rgba(0, 242, 254, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginBottom: 4,
+  },
+  trialBadgeText: {
+    color: '#00F2FE',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  priceMain: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  toastBox: {
+    backgroundColor: 'rgba(0, 242, 254, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 254, 0.4)',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 14,
+    alignItems: 'center',
+  },
+  toastText: {
+    color: '#00F2FE',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  continueBtn: {
+    backgroundColor: '#00F2FE',
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#00F2FE',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  continueBtnText: {
+    color: '#08080C',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footerLink: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  footerDot: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    marginHorizontal: 8,
+    fontSize: 11,
+  },
+});

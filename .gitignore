@@ -45,5 +45,11 @@ yarn-error.*
 /ios
 /android
 
+# dependencies
+node_modules/
+server/node_modules/
+
 # compiled binaries
 *.apk
+*.aab
+*.ipa

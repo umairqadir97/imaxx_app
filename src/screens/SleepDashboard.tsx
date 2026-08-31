@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ScrollView, TouchableOpacity, View, Text, TextInput, Modal, ActivityIndicator, Dimensions, Animated, Switch, PanResponder, Platform } from 'react-native';
 import styled from 'styled-components/native';
-import { Calendar, MoreHorizontal, Bell, Moon, Sun, Play, Pause, ChevronRight, ChevronLeft, HelpCircle, X, Check, Activity, Sparkles, AlertCircle, Smartphone, Volume2, ShieldAlert } from 'lucide-react-native';
+import { Calendar, MoreHorizontal, Bell, Moon, Sun, Play, Pause, ChevronRight, ChevronLeft, HelpCircle, X, Check, Activity, Sparkles, AlertCircle, Smartphone, Volume2, ShieldAlert, Lock } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useAppDispatch, useAppSelector } from '../store';
 import { setSoundscape, togglePlayback } from '../store/audioSlice';
@@ -891,7 +891,7 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
   onOpenScenarios
 }) => {
   const dispatch = useAppDispatch();
-  const { isPlaying, activeSoundscape } = useAppSelector((state) => state.audio);
+  const { isPlaying, activeSoundscape, isPremiumUnlocked } = useAppSelector((state) => state.audio);
 
   // Time picker states
   const [alarmHour, setAlarmHour] = useState(7);
@@ -1380,6 +1380,10 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
 
   // Add alarm directly from top tile to Upcoming Alarms list
   const handleAddAlarmFromTile = () => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall();
+      return;
+    }
     const newAlarm: AlarmItem = {
       id: Date.now().toString(),
       hour: alarmHour,
@@ -1921,7 +1925,37 @@ export const SleepDashboard: React.FC<SleepDashboardProps> = ({
             </HeaderIconBox>
           </HeaderBar>
 
-          <ScrollContent showsVerticalScrollIndicator={false}>
+          {/* Free Plan Lock Banner */}
+          {!isPremiumUnlocked && (
+            <TouchableOpacity
+              style={{
+                backgroundColor: 'rgba(255, 126, 71, 0.12)',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 126, 71, 0.35)',
+                borderRadius: 14,
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                marginHorizontal: 20,
+                marginTop: 10,
+                marginBottom: 8,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+              onPress={onOpenPaywall}
+              activeOpacity={0.85}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Lock size={16} color="#FF7E47" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#FFFFFF', fontSize: 13 }}>
+                  🔒 Free Plan — <Text style={{ color: '#FF7E47', fontWeight: 'bold' }}>Upgrade to iMaxx Premium</Text> to unlock Smart Sleep Alarms
+                </Text>
+              </View>
+              <ChevronRight size={16} color="#FF7E47" />
+            </TouchableOpacity>
+          )}
+
+          <ScrollContent showsVerticalScrollIndicator={false} style={{ opacity: !isPremiumUnlocked ? 0.45 : 1 }}>
 
             {/* Smart Paginator Card in Center (Fully Swipeable!) */}
             <ControlCard {...paginatorPanResponder.panHandlers}>

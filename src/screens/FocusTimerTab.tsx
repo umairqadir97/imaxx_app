@@ -9,7 +9,7 @@ import Animated, {
   Easing,
   withSequence,
 } from 'react-native-reanimated';
-import { Play, Pause, RotateCcw, Clock, PieChart, BarChart2, Star, Briefcase, Book, Sparkles, Dumbbell, Code, Smile, Settings, Plus, Minus, ChevronUp, ChevronDown, X } from 'lucide-react-native';
+import { Play, Pause, RotateCcw, Clock, PieChart, BarChart2, Star, Briefcase, Book, Sparkles, Dumbbell, Code, Smile, Settings, Plus, Minus, ChevronUp, ChevronDown, X, Lock, ChevronRight } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../store';
 import {
   setTimerMode,
@@ -503,7 +503,11 @@ const SwipeDial: React.FC<{ onIncrement?: () => void; onDecrement?: () => void }
 // MAIN COMPONENT
 // -------------------------------------------------------------
 
-export const FocusTimerTab: React.FC = () => {
+export interface FocusTimerTabProps {
+  onOpenPaywall?: () => void;
+}
+
+export const FocusTimerTab: React.FC<FocusTimerTabProps> = ({ onOpenPaywall }) => {
   const dispatch = useAppDispatch();
   const {
     timerIsActive,
@@ -526,6 +530,7 @@ export const FocusTimerTab: React.FC = () => {
     currentPhase,
     sessionActive,
     categoryFocusSeconds,
+    isPremiumUnlocked,
   } = useAppSelector((state) => state.audio);
 
   const pomoFocusDurationRef = useRef(pomoFocusDuration);
@@ -574,6 +579,10 @@ export const FocusTimerTab: React.FC = () => {
   const secondsStr = seconds.toString().padStart(2, '0');
 
   const handleStartPause = () => {
+    if (!isPremiumUnlocked) {
+      onOpenPaywall && onOpenPaywall();
+      return;
+    }
     if (timerIsActive || (sessionActive && isPlaying)) {
       // Pause: keep timerIsActive false but session stays active
       dispatch(togglePlayback());
@@ -699,8 +708,38 @@ export const FocusTimerTab: React.FC = () => {
         <HeaderTitle>Focus Session</HeaderTitle>
       </HeaderBar>
 
+      {/* Free Plan Lock Banner */}
+      {!isPremiumUnlocked && (
+        <TouchableOpacity
+          style={{
+            backgroundColor: 'rgba(255, 126, 71, 0.12)',
+            borderWidth: 1,
+            borderColor: 'rgba(255, 126, 71, 0.35)',
+            borderRadius: 14,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            marginHorizontal: 20,
+            marginTop: 10,
+            marginBottom: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+          onPress={() => onOpenPaywall && onOpenPaywall()}
+          activeOpacity={0.85}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Lock size={16} color="#FF7E47" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#FFFFFF', fontSize: 13 }}>
+              🔒 Free Plan — <Text style={{ color: '#FF7E47', fontWeight: 'bold' }}>Upgrade to iMaxx Premium</Text> to unlock Focus Timer
+            </Text>
+          </View>
+          <ChevronRight size={16} color="#FF7E47" />
+        </TouchableOpacity>
+      )}
+
       {activeSubScreen === 'timer' && (
-        <SubContainer>
+        <SubContainer style={{ opacity: !isPremiumUnlocked ? 0.45 : 1 }}>
           {/* Toggle Tab Selectors - Auto Hides during session */}
           {!sessionActive && (
             <FocusTypeTabs>
